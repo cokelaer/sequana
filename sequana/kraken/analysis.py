@@ -13,7 +13,7 @@
 import os
 import shutil
 import sys
-from pathlib import PosixPath
+from pathlib import Path, PosixPath
 
 import colorlog
 from easydev import TempFile, md5
@@ -936,12 +936,14 @@ class KrakenAnalysis(object):
         # make sure the required output directories exist:
         # and that the output filenames ends in .fastq
         if output_filename_classified:
+            output_filename_classified = Path(output_filename_classified)
             assert str(output_filename_classified).endswith(".fastq")
-            output_filename_classified.mkdir(parents=True, exist_ok=True)
+            output_filename_classified.parent.mkdir(parents=True, exist_ok=True)
 
         if output_filename_unclassified:
+            output_filename_unclassified = Path(output_filename_unclassified)
             assert str(output_filename_unclassified).endswith(".fastq")
-            output_filename_unclassified.mkdir(parents=True, exist_ok=True)
+            output_filename_unclassified.parent.mkdir(parents=True, exist_ok=True)
 
         params = {
             "database": self.database.path,
