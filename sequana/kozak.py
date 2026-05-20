@@ -37,23 +37,55 @@ class Motif:
         else:
             self.df = motif
 
-    def _get_entropy(self):
+    def _get_entropy(self, base=2):
+        """Compute Shannon entropy for each position in the motif.
+
+        Shannon Entropy H(p) = -sum(p * log_base(p)) for DNA (4-letter alphabet).
+
+        :param base: the base of the logarithm. Common values: 2 (bits, default),
+            e (nats), 10 (bans).
+        :return: numpy array of entropy values per position.
+        """
         from scipy.stats import entropy
 
         freq = self.df[["A", "C", "G", "T"]].to_numpy()
         freq = freq / freq.sum(axis=1, keepdims=True)
-        IC = 2 - np.array([entropy(row, base=2) for row in freq])
-        return IC
+        H = np.array([entropy(row, base=base) for row in freq])
+        return H
 
     entropy = property(_get_entropy)
 
+    def _get_information_content(self, base=2):
+        """Compute information content (bits) for each position in the motif.
+
+        Information Content (IC) = max_entropy - Shannon_entropy = 2 - H(p)
+        for DNA (4-letter alphabet).
+
+        :param base: the base of the logarithm. Common values: 2 (bits, default),
+            e (nats), 10 (bans).
+        :return: numpy array of information content values per position.
+        """
+        return 2 - self.entropy
+
+    information_content = property(_get_information_content)
+
     def plot_entropy(self):
+        """Plot Shannon entropy per position."""
         from pylab import axvline, plot, ylabel, ylim
 
         axvline(0.5, c="k")
         plot(self.df.index, self.entropy)
         ylabel("Bits")
-        ylim([0, 1.5])
+        ylim([0, 2.1])
+
+    def plot_information_content(self):
+        """Plot information content (IC) per position."""
+        from pylab import axvline, plot, ylabel, ylim
+
+        axvline(0.5, c="k")
+        plot(self.df.index, self.information_content)
+        ylabel("Bits")
+        ylim([0, 2.1])
 
 
 class Kozak:
@@ -136,7 +168,27 @@ class Kozak:
         keep_ATG_only=True,
         include_start_codon=False,
         background_method="genome",
+        collapse_first_cds=True,
     ):
+        """Configure context windows and feature-row collapsing.
+
+        :param int left_kozak: number of nucleotides to keep upstream of the
+            start codon.
+        :param int right_kozak: number of nucleotides to keep downstream of
+            the start codon.
+        :param bool keep_ATG_only: if True, restrict downstream analyses to
+            rows whose start codon is ``ATG``.
+        :param bool include_start_codon: include the start codon itself in
+            the Kozak window when True.
+        :param str background_method: one of ``"context"``, ``"genome"``,
+            ``"shuffled"`` or ``"uniform"``.
+        :param bool collapse_first_cds: when True (default), collapse
+            multi-exon CDS rows to one row per transcript (the 5'-most CDS,
+            which is the only CDS row corresponding to a real start codon).
+            See :meth:`_collapse_to_first_cds` for rationale. Set to False
+            to recover the legacy behaviour where every CDS row is treated
+            as a separate start (useful for benchmarking the bug fix).
+        """
         assert left_kozak > 0
         assert right_kozak > 0
         self._left_kozak = left_kozak
@@ -144,6 +196,7 @@ class Kozak:
         self._keep_ATG_only = keep_ATG_only
         self._include_start_codon = include_start_codon
         self._background_method = background_method
+        self._collapse_first_cds = collapse_first_cds
 
         _valid_methods = ["context", "genome", "shuffled", "uniform"]
         if background_method not in _valid_methods:
@@ -183,6 +236,83 @@ class Kozak:
 
     include_start_codon = property(_get_include_start_codon, _set_include_start_codon)
 
+    def _get_collapse_first_cds(self):
+        return self._collapse_first_cds
+
+    def _set_collapse_first_cds(self, value):
+        assert value in [True, False]
+        self._collapse_first_cds = value
+        try:
+            del self._cached_df
+        except AttributeError:
+            pass
+
+    collapse_first_cds = property(_get_collapse_first_cds, _set_collapse_first_cds)
+
+    def _collapse_to_first_cds(self, df):
+        """Collapse multi-exon CDS rows to one row per transcript.
+
+        For multi-exon eukaryotic genes, GFF3 files contain one CDS row per
+        coding exon. Only the 5'-most CDS row corresponds to the actual
+        start codon; subsequent rows correspond to internal exon boundaries
+        (splice junctions), which are NOT biological start codons.
+        Including them pollutes the Kozak signal with what amounts to
+        random in-frame codons and dilutes the ATG fraction toward
+        ``1 / mean_exons_per_gene``.
+
+        This helper groups rows by their parent transcript (taken from the
+        ``Parent`` GFF attribute) and keeps the 5'-most CDS per group:
+
+        * for ``+`` strand features, the row with the smallest ``start``;
+        * for ``-`` strand features, the row with the largest ``stop``.
+
+        If the ``Parent`` attribute is missing for every row (typical when
+        ``genetic_type='gene'`` since gene features have no parent, or for
+        flat prokaryotic GFFs without parent/child relationships), the
+        dataframe is returned unchanged. Rows whose ``Parent`` is missing
+        while others have one are also kept unchanged.
+
+        :param pandas.DataFrame df: GFF3 dataframe pre-filtered to the
+            selected ``genetic_type`` rows.
+        :return: dataframe with at most one CDS row per transcript.
+        :rtype: pandas.DataFrame
+        """
+        if len(df) == 0 or "attributes" not in df.columns:
+            return df
+
+        def _get_parent(attrs):
+            if isinstance(attrs, dict):
+                p = attrs.get("Parent")
+                if isinstance(p, list):
+                    return p[0] if p else None
+                return p
+            return None
+
+        parents = df["attributes"].map(_get_parent)
+        if parents.isna().all():
+            logger.info("No 'Parent' attribute found on selected features; " "skipping multi-exon CDS collapse.")
+            return df
+
+        df = df.assign(_parent=parents)
+        with_parent = df[df["_parent"].notna()]
+        without_parent = df[df["_parent"].isna()]
+
+        plus = (
+            with_parent[with_parent["strand"] == "+"]
+            .sort_values("start", ascending=True)
+            .drop_duplicates("_parent", keep="first")
+        )
+        minus = (
+            with_parent[with_parent["strand"] == "-"]
+            .sort_values("stop", ascending=False)
+            .drop_duplicates("_parent", keep="first")
+        )
+        out = pd.concat([plus, minus, without_parent]).drop(columns="_parent")
+        logger.info(
+            f"Collapsed multi-exon {self.genetic_type} rows: " f"{len(df)} -> {len(out)} (one row per transcript)."
+        )
+        return out
+
     def _compute(self):
         # Store all kozak sequences with generous left and right values
         if hasattr(self, "_cached_df"):
@@ -202,6 +332,13 @@ class Kozak:
 
         # Reading GFF
         gff = self.gff.df
+
+        # For multi-exon transcripts, GFF lists one CDS row per exon but only
+        # the 5'-most CDS corresponds to a real start codon. Collapse here
+        # before iterating, otherwise internal exon boundaries are mistaken
+        # for start codons and ATG_ratio drops to ~1/mean_exons_per_gene.
+        if self._collapse_first_cds:
+            gff = self._collapse_to_first_cds(gff)
 
         # we split by chrom to get the sequence one by one.
         data = []
@@ -444,8 +581,8 @@ class Kozak:
         self._plot_logo(logo_data[["R", "Y"]], ax=ax, color_scheme={"Y": "purple", "R": "#78bc00"})
         return logo_data
 
-    def get_entropy(self, motif):
-        return Motif(motif).entropy
+    def get_information_content(self, motif):
+        return Motif(motif).information_content
 
     @contextmanager
     def temporary_lr(self, left=None, right=None):
@@ -1248,3 +1385,157 @@ class KozakAddon(Kozak):
         pylab.axhline(mid)
         pylab.xlabel("Number of unique 6-mers")
         pylab.ylabel("Number of genes")
+
+
+class KozakWeightScore:
+    """Compute Kozak Similarity Score using weight matrix approach.
+
+    Weight-matrix based scoring for translation initiation prediction.
+    Implements the algorithm from https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0256411
+
+    Flexible left/right flank parameters allow custom window sizes.
+
+    Example::
+
+        from sequana.kozak import KozakWeightScore
+        kss = KozakWeightScore(left_flank=10, right_flank=10)
+        score = kss.score("CGCCGCCACCATGGCGGCGGAGG")
+    """
+
+    def __init__(self, weight_matrix=None, left_flank=10, right_flank=10):
+        """Initialize weight-based scorer.
+
+        Parameters
+        ----------
+        weight_matrix : np.ndarray, optional
+            Shape (n_positions, 5) where columns: A, T, G, C, N.
+            Default: canonical ATG 23bp matrix.
+        left_flank : int, default 10
+            Bases upstream of codon.
+        right_flank : int, default 10
+            Bases downstream of codon.
+        """
+        self.left_flank = left_flank
+        self.right_flank = right_flank
+        self.codon_len = 3
+
+        if weight_matrix is None:
+            self.weight_matrix = self._default_atg_matrix()
+        else:
+            self.weight_matrix = np.asarray(weight_matrix, dtype=float)
+
+        if self.weight_matrix.shape[1] != 5:
+            raise ValueError("Weight matrix must have 5 columns (A, T, G, C, N)")
+
+        self._validate_params()
+
+    def _validate_params(self):
+        """Check flanks match matrix size."""
+        required = self.left_flank + self.codon_len + self.right_flank
+        if self.weight_matrix.shape[0] < required:
+            raise ValueError(
+                f"Weight matrix rows={self.weight_matrix.shape[0]}, "
+                f"but {required} required for left={self.left_flank}, right={self.right_flank}"
+            )
+
+    @staticmethod
+    def _default_atg_matrix():
+        """Default 23bp ATG matrix."""
+        return np.array(
+            [
+                [0.04210526, 0.0, 0.03157895, 0.05263158, 0.0],
+                [0.04210526, 0.05263158, 0.10526316, 0.0625, 0.0],
+                [0.03157895, 0.04210526, 0.05263158, 0.07368421, 0.0],
+                [0.03157895, 0.01052632, 0.04210526, 0.05263158, 0.0],
+                [0.08421053, 0.07368421, 0.18947368, 0.10526316, 0.0],
+                [0.04210526, 0.05263158, 0.05263158, 0.08421053, 0.0],
+                [0.12631579, 0.0625, 0.12631579, 0.21052632, 0.0],
+                [0.83157895, 0.12631579, 0.65263158, 0.16842105, 0.0],
+                [0.15789474, 0.06315789, 0.11578947, 0.2, 0.0],
+                [0.21052632, 0.09473684, 0.31578947, 0.51578947, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.24210526, 0.16666667, 0.53684211, 0.13684211, 0.0],
+                [0.15789474, 0.09473684, 0.09473684, 0.24210526, 0.0],
+                [0.05263158, 0.08421053, 0.14736842, 0.09473684, 0.0],
+                [0.07216495, 0.05263158, 0.10526316, 0.06315789, 0.0],
+                [0.0, 0.0, 0.0, 0.05263158, 0.0],
+                [0.05263158, 0.05263158, 0.10526316, 0.09473684, 0.0],
+                [0.04210526, 0.03157895, 0.05263158, 0.04210526, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.04210526, 0.04210526, 0.08421053, 0.07368421, 0.0],
+                [0.0625, 0.04210526, 0.09473684, 0.05263158, 0.0],
+            ]
+        )
+
+    def _encode_seq(self, seq):
+        """Encode: A=0, T=1, G=2, C=3, U=1, N=4."""
+        mapping = {"A": 0, "T": 1, "G": 2, "C": 3, "U": 1, "N": 4}
+        return np.array([mapping.get(b.upper(), 4) for b in seq], dtype=int)
+
+    def score(self, sequence):
+        """Compute KSS for sequence.
+
+        Parameters
+        ----------
+        sequence : str
+            Length left_flank + 3 + right_flank. Codon centered.
+
+        Returns
+        -------
+        float
+            Normalized score [0, 1].
+        """
+        expected_len = self.left_flank + self.codon_len + self.right_flank
+        assert len(sequence) == expected_len, (
+            f"Length {len(sequence)} != {expected_len} " f"(left={self.left_flank}, right={self.right_flank})"
+        )
+
+        # Extract relevant weight rows
+        start_row = 10 - self.left_flank
+        end_row = start_row + expected_len
+        weights = self.weight_matrix[start_row:end_row]
+
+        # Encode and score
+        codes = self._encode_seq(sequence)
+        score = sum(weights[i, codes[i]] for i in range(len(codes)))
+
+        # Normalize
+        max_score = np.sum(weights.max(axis=1))
+        return score / max_score if max_score > 0 else 0.0
+
+    def score_batch(self, sequences):
+        """Score multiple sequences.
+
+        Parameters
+        ----------
+        sequences : list of str
+
+        Returns
+        -------
+        np.ndarray
+            Scores for each sequence.
+        """
+        return np.array([self.score(seq) for seq in sequences])
+
+
+def kozak_weight_score(sequence, weight_matrix=None, left_flank=10, right_flank=10):
+    """Quick-score function (convenience wrapper).
+
+    Parameters
+    ----------
+    sequence : str
+        DNA sequence centered on codon.
+    weight_matrix : np.ndarray, optional
+        Weight matrix. Uses default ATG if None.
+    left_flank : int, default 10
+    right_flank : int, default 10
+
+    Returns
+    -------
+    float
+        Normalized KSS [0, 1].
+    """
+    scorer = KozakWeightScore(weight_matrix=weight_matrix, left_flank=left_flank, right_flank=right_flank)
+    return scorer.score(sequence)
