@@ -156,6 +156,9 @@ def somy_score(**kwargs):
     ss.remove_flanks(remove_flanking_regions_kb=flanks)
     logger.info(f"Removing flanks ({flanks}kb). length input coverage file: {len(ss.df)}")
 
+    # Plot filtering statistics
+    ss.plot_filter_stats("sequana_filter_stats.png")
+
     from matplotlib import rcParams
 
     rcParams["figure.figsize"] = (12, 8)
