@@ -119,6 +119,7 @@ class SomyScore:
         self.save_em = True
         self.save_em_filename = "sequana_somy_em.png"
         self.info = {}
+        self._filter_stats = {}
 
     def _get_df(self):
         return self._df
@@ -220,6 +221,8 @@ class SomyScore:
         else:
             self._df = pd.concat(results)
 
+        self._filter_stats["initial"] = len(self._df)
+
     def _estimate_diploid_mean_depth_em(self, k=None, bins=100):
 
         # we can estimate the mean by brute force
@@ -295,30 +298,58 @@ class SomyScore:
         return muhat
 
     def remove_outliers(self, percentile=0.05):
-        def remove_outliers(
-            group, col_name="depth", lower_percentile=0.05, upper_percentile=0.95, include_groups=False
-        ):
-            lower = group[col_name].quantile(lower_percentile)
-            upper = group[col_name].quantile(upper_percentile)
-            filtered_group = group[(group[col_name] >= lower) & (group[col_name] <= upper)]
-            return filtered_group
+        before = len(self.df)
+        if before == 0:
+            logger.warning("Dataframe is empty, skipping outlier removal")
+            return
 
-        # remove outliers
-        import pandas as pd
+        # Filter per-chromosome to preserve chr column
+        filtered_dfs = []
+        for chr_name in self.df["chr"].unique():
+            group = self.df[self.df["chr"] == chr_name]
+            lower = group["depth"].quantile(0.05)
+            upper = group["depth"].quantile(0.95)
+            filtered_group = group[(group["depth"] >= lower) & (group["depth"] <= upper)]
+            filtered_dfs.append(filtered_group)
 
-        df = self.df.groupby("chr", group_keys=False).apply(remove_outliers)
-        self._df = df.reset_index(drop=True)
+        self._df = pd.concat(filtered_dfs, ignore_index=True)
+        self._filter_stats["after_outliers"] = len(self._df)
+        removed = before - len(self._df)
+        if before > 0:
+            logger.info(f"Removed {removed} windows as outliers ({100*removed/before:.1f}%)")
+        else:
+            logger.info(f"Removed {removed} windows as outliers")
 
     def remove_flanks(self, remove_flanking_regions_kb=10):
         # filter out  data to remove telomeric regions based on distance (number of windows)
         # e.g. 10 kb means 10 regions of 1kb to remove on both sides
         from math import ceil
 
+        before = len(self.df)
+        if before == 0:
+            logger.warning("Dataframe is empty, skipping flank removal")
+            return
         N = ceil(remove_flanking_regions_kb * 1000.0 / self.window_size)
         self._df = self._df.query("dist>@N")
+        self._filter_stats["after_flanks"] = len(self._df)
+        removed = before - len(self._df)
+        if before > 0:
+            logger.info(f"Removed {removed} windows in flanking regions ({100*removed/before:.1f}%)")
+        else:
+            logger.info(f"Removed {removed} windows in flanking regions")
 
     def remove_low_depth(self, threshold=10):
+        before = len(self.df)
+        if before == 0:
+            logger.warning("Dataframe is empty, skipping low depth removal")
+            return
         self._df = self.df.query("depth>@threshold")
+        self._filter_stats["after_low_depth"] = len(self._df)
+        removed = before - len(self._df)
+        if before > 0:
+            logger.info(f"Removed {removed} windows with low depth (<{threshold}) ({100*removed/before:.1f}%)")
+        else:
+            logger.info(f"Removed {removed} windows with low depth (<{threshold})")
 
     def _estimate_diploid_median_depth(self):
         # iterative estimate
@@ -326,6 +357,43 @@ class SomyScore:
         muhat = self.df["depth"].median()
         # this may be biased by tetraploid chromosomes
         return muhat
+
+    def plot_filter_stats(self, filename="sequana_filter_stats.png"):
+        stages = ["initial"]
+        counts = [self._filter_stats.get("initial", 0)]
+
+        if "after_outliers" in self._filter_stats:
+            stages.append("after outliers\nremoval")
+            counts.append(self._filter_stats["after_outliers"])
+        if "after_low_depth" in self._filter_stats:
+            stages.append("after low depth\nremoval")
+            counts.append(self._filter_stats["after_low_depth"])
+        if "after_flanks" in self._filter_stats:
+            stages.append("after flanking\nregion removal")
+            counts.append(self._filter_stats["after_flanks"])
+
+        pylab.clf()
+        pylab.figure(figsize=(10, 6))
+        colors = ["#2ecc71" if i == 0 else "#e74c3c" for i in range(len(stages))]
+        bars = pylab.bar(stages, counts, color=colors, alpha=0.7, edgecolor="black")
+
+        for i, (stage, count) in enumerate(zip(stages, counts)):
+            if i == 0:
+                removed = 0
+            else:
+                removed = counts[i - 1] - count
+                pct = 100 * removed / counts[i - 1]
+                pylab.text(
+                    i, count / 2, f"-{removed}\n({pct:.1f}%)", ha="center", va="center", fontweight="bold", fontsize=10
+                )
+            pylab.text(i, count + max(counts) * 0.02, str(count), ha="center", va="bottom", fontweight="bold")
+
+        pylab.ylabel("Number of windows", fontsize=12)
+        pylab.xlabel("Filtering stage", fontsize=12)
+        pylab.title("Filtering pipeline: windows retained at each step", fontsize=14, fontweight="bold")
+        pylab.tight_layout()
+        pylab.savefig(filename, dpi=200)
+        logger.info(f"Filtering statistics plot saved to {filename}")
 
     def boxplot(
         self,
@@ -345,6 +413,17 @@ class SomyScore:
         import seaborn as sns
 
         data = self._df.copy()
+
+        if len(data) == 0:
+            logger.error("Dataframe is empty after filtering. No windows remain for analysis.")
+            logger.error("Filtering statistics:")
+            for stage, count in self._filter_stats.items():
+                logger.error(f"  {stage}: {count} windows")
+            self.plot_filter_stats("sequana_filter_stats.png")
+            raise ValueError(
+                f"No data remaining after filtering. Check sequana_filter_stats.png for details. "
+                f"Consider using less stringent filters (e.g., increase --minimum-depth, decrease --telomeric-span)"
+            )
 
         if muhat:
             if normalise:
