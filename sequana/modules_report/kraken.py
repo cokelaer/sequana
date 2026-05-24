@@ -243,7 +243,6 @@ classified and U for unclassified reads.</p><div>"""
         if os.path.exists(filename):
             df = pd.read_csv(filename, sep=",")
             datatable = DataTable(df, "blast_summary", index=False)
-            datatable.datatable.set_links_to_column("links", "blast")
             datatable.datatable.datatable_options = {
                 "scrollX": "300px",
                 "pageLength": 30,
@@ -254,8 +253,10 @@ classified and U for unclassified reads.</p><div>"""
             }
             js = datatable.create_javascript_function()
             html_tab = datatable.create_datatable(float_format="%.3g")
-            html = f"""<p>Here below you can find the summary of 1000
-unclassified reads blasted on a local blast DB. {krona} {js} {html_tab}</p><hr>"""
+            html = f"""<p>Here below you can find the summary of unclassified reads blasted on a local BLAST database. {krona}</p>
+{html_tab}
+{js}
+<hr>"""
         else:
             html = f"{krona}"
 
