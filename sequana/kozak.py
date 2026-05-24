@@ -149,7 +149,7 @@ class Kozak:
 
         # place holder for various metrics
         self.metrics = {}
-        self._background_method = "genome"  # default
+        self._background_method = "context"  # default
 
     @property
     def genetic_type(self):
@@ -167,7 +167,7 @@ class Kozak:
         right_kozak=6,
         keep_ATG_only=True,
         include_start_codon=False,
-        background_method="genome",
+        background_method="context",
         collapse_first_cds=True,
     ):
         """Configure context windows and feature-row collapsing.
@@ -180,8 +180,8 @@ class Kozak:
             rows whose start codon is ``ATG``.
         :param bool include_start_codon: include the start codon itself in
             the Kozak window when True.
-        :param str background_method: one of ``"context"``, ``"genome"``,
-            ``"shuffled"`` or ``"uniform"``.
+        :param str background_method: one of ``"context"``, ``"shuffled"``,
+            or ``"uniform"``.
         :param bool collapse_first_cds: when True (default), collapse
             multi-exon CDS rows to one row per transcript (the 5'-most CDS,
             which is the only CDS row corresponding to a real start codon).
@@ -198,7 +198,7 @@ class Kozak:
         self._background_method = background_method
         self._collapse_first_cds = collapse_first_cds
 
-        _valid_methods = ["context", "genome", "shuffled", "uniform"]
+        _valid_methods = ["context", "shuffled", "uniform"]
         if background_method not in _valid_methods:
             raise ValueError(f"background_method must be one of {_valid_methods}")
         self._get_full_background.cache_clear()
@@ -669,7 +669,7 @@ class Kozak:
             if self._background_method == "context":
                 GC_mode = "context"
             else:
-                # genome and shuffled
+                # shuffled and uniform
                 GC_mode = "genome"
 
         if GC_mode == "context":
@@ -776,9 +776,11 @@ class Kozak:
             return self._get_shuffled_background(df, Nmax)
         elif self._background_method == "uniform":
             return self._get_uniform_background(df, Nmax)
-        else:
-            # genomic method can generate more if needed, but let's stick to len(df) as default
+        elif self._background_method == "context":
+            # context uses genomic sampling for background generation
             return self._get_genomic_background(df, Nmax, quiet)
+        else:
+            raise ValueError(f"Unsupported background method: {self._background_method}")
 
     def _get_uniform_background(self, df, Nmax):
         """

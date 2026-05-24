@@ -15,6 +15,25 @@ except ImportError:
 skiptravis = pytest.mark.skipif("TRAVIS_PYTHON_VERSION" in os.environ, reason="On travis")
 
 
+@pytest.fixture(autouse=True)
+def reset_config_output_dir():
+    """Reset config.output_dir and clean up css/js/images dirs created by tests."""
+    import shutil
+
+    from sequana.utils import config
+
+    original_output_dir = config.output_dir
+    yield
+    config.output_dir = original_output_dir
+
+    # Clean up css/js/images directories if they were created in the current working directory
+    cwd = os.getcwd()
+    for dirname in ("css", "js", "images"):
+        path = os.path.join(cwd, dirname)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+
+
 def pytest_runtest_setup(item):
     if "TRAVIS_PYTHON_VERSION" in os.environ:
         print("downloading toydb data from github")

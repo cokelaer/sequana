@@ -30,7 +30,8 @@ def test_pacbio_input_bam(tmpdir):
 
     from sequana.utils import config
 
-    config.output_dir = "/tmp"
+    tmpdir_str = str(tmpdir)
+    config.output_dir = tmpdir_str
     # here, ff.name is of the form /tmp/djhfjh4dz so we need to remove the /tmp
     pacbio_input_bam.PacbioInputBAMModule(summary_file.name, ff.name.split("/")[1])
 
