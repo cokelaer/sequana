@@ -274,7 +274,7 @@ def searchLCA(taxids, taxonomy_file, buffer={}):
         parents = []
 
     if len(parents) == 0:
-        print(f"the taxids {taxids} were not found")
+        logger.warning(f"the taxids {taxids} were not found")
         buffer[IDs] = -1
         return -1
     elif len(parents) == 1:
@@ -328,7 +328,6 @@ def build_consensus(inputs, output):
         kmer_dict = {}
         parts = kmer_info.split()
         for part in parts:
-            print(part)
             if part != "|:|":
                 key, value = part.split(":")
                 kmer_dict[key] = int(value)
@@ -346,7 +345,7 @@ def build_consensus(inputs, output):
             try:
                 count += 1
                 if count % 10000 == 0:
-                    print(count)
+                    logger.info(f"Processed {count} reads")
                 lines = [stream.readline() for stream in streams]
 
                 kmer_totals = defaultdict(int)
@@ -411,7 +410,7 @@ def build_consensus(inputs, output):
 
                 fout.write("\t".join([classified, parts[1], str(best_taxid), parts[3], kmers]))
             except Exception as err:
-                print(err)
+                logger.error(str(err))
                 break
 
         fout.close()

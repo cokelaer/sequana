@@ -474,7 +474,15 @@ class KrakenResults:
                 this_cmap = plt.cm.Greys
             elif kingdom == "Bacteria":
                 this_cmap = plt.cm.Reds
-            elif kingdom == "Viruses":
+            elif kingdom in (
+                "Viruses",
+                "Orthornavirae",
+                "Sangervirae",
+                "Bamfordvirae",
+                "Loebvirae",
+                "Heunggongvirae",
+                "Cossaviricetes",
+            ) or kingdom.endswith("virae"):
                 this_cmap = plt.cm.Greens
             elif kingdom == "Archaea":
                 this_cmap = _colormap.Colormap().cmap_linear("yellow", "yellow", "orange")
@@ -897,7 +905,7 @@ class KrakenAnalysis(object):
                 raise IOError(("You must provide 1 or 2 files"))
             self.fastq = fastq
         else:
-            print(type(fastq), len(fastq))
+            logger.error(f"Invalid fastq input: type={type(fastq)}, len={len(fastq)}")
             raise ValueError(f"Expected a fastq filename or list of 2 fastq filenames Got {fastq}")
 
     def run(

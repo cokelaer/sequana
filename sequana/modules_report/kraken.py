@@ -234,30 +234,43 @@ classified and U for unclassified reads.</p><div>"""
         )
 
     def add_blast_section(self):
-        if os.path.exists(f"{self.directory}/../blast/text.krona.html"):
+        logger.debug(f"add_blast_section: directory={self.directory}")
+        krona_path = f"{self.directory}/../blast/text.krona.html"
+        if os.path.exists(krona_path):
             krona = """ You can visualise the results in the <a href="blast/text.krona.html"> Krona page</a>."""
+            logger.debug(f"Krona found: {krona_path}")
         else:
             krona = ""
+            logger.debug(f"Krona not found: {krona_path}")
 
         filename = f"{self.directory}/../blast/blast_summary.csv"
-        if os.path.exists(filename):
-            df = pd.read_csv(filename, sep=",")
-            datatable = DataTable(df, "blast_summary", index=False)
-            datatable.datatable.datatable_options = {
-                "scrollX": "300px",
-                "pageLength": 30,
-                "scrollCollapse": "true",
-                "dom": "frtip",
-                "paging": "false",
-                "buttons": ["copy", "csv"],
-            }
-            js = datatable.create_javascript_function()
-            html_tab = datatable.create_datatable(float_format="%.3g")
-            html = f"""<p>Here below you can find the summary of unclassified reads blasted on a local BLAST database. {krona}</p>
+        logger.debug(f"Looking for blast CSV: {filename}, exists={os.path.exists(filename)}")
+        try:
+            if os.path.exists(filename):
+                df = pd.read_csv(filename, sep=",")
+                logger.debug(f"Loaded blast CSV, shape={df.shape}")
+                datatable = DataTable(df, "blast_summary", index=False)
+                datatable.datatable.datatable_options = {
+                    "scrollX": "300px",
+                    "pageLength": 30,
+                    "scrollCollapse": "true",
+                    "dom": "frtip",
+                    "paging": "false",
+                    "buttons": ["copy", "csv"],
+                }
+                js = datatable.create_javascript_function()
+                html_tab = datatable.create_datatable(float_format="%.3g")
+                html = f"""<p>Here below you can find the summary of unclassified reads blasted on a local BLAST database. {krona}</p>
 {html_tab}
 {js}
 <hr>"""
-        else:
+                logger.debug(f"Created blast table, html length={len(html)}")
+            else:
+                html = f"{krona}"
+                logger.debug(f"Blast CSV not found, using krona only")
+        except Exception as e:
+            logger.warning(f"Could not create blast table: {e}")
+            logger.exception("Full traceback:")
             html = f"{krona}"
 
         self.sections.append(
