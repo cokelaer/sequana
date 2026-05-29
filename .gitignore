@@ -57,6 +57,10 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+doc/build/
+doc/notebooks/
+doc/auto_examples/
+doc/sg_execution_times.rst
 
 # PyBuilder
 target/
