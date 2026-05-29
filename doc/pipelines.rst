@@ -1,107 +1,193 @@
-
 .. _pipelines:
 
 Pipelines
-##############
+##########
 
-Sequana ships many pipelines related to NGS. Some are very simple (fastqc,
-demultiplex, downsampling), others are real-life NGS pipelines used in
-production.
+Sequana ships a family of NGS pipelines, each in its own GitHub repository and
+PyPI package. They share a common installation pattern, CLI shape, and HTML
+report layout.
 
-.. warning:: Since v0.8.0, pipelines are now independent from **Sequana**. 
-    They must be installed separetely and their dependencies must also be
-    installed by the user/developer.
+.. contents::
+   :local:
+   :depth: 2
 
-Quick Start
+
+Quick start
 ===========
 
-If **Sequana** is installed, installing a pipeline is straightforward. For
-example, to install the variant calling pipeline::
+::
 
-    pip install sequana_variant_calling --upgrade
+    pip install sequana_<name> --upgrade
+    sequana_<name> --help
 
-Since version 0.8.1, you can check whether you have the required dependencies.
-If not, an error message will appear anyway::
-
-    sequana_variant_calling --deps
-
-Once those dependencies are available, you can run the pipeline::
-
-    sequana_variant_calling --help
-
-
-
-Overview
-========
-
-In **Sequana** parlance, a pipeline is an application based on Snakemake that consists of a Snakefile and a configuration file. Although since v0.8.0, we augmented a pipeline with other optional files such as a schema to check the config file, a logo, a dag image representing the pipeline, a requirements file with external dependencies and so on. 
-
-All pipelines are based on Snakemake. For a tutorial, you can have a look at the Snakemake page or
-online-tutorials (e.g. http://slowkow.com/notes/snakemake-tutorial/).
-
-
-.. note:: **Pipeline naming convention**
-
-    A pipeline is named **sequana_pipelines_name** where name is to be replaced by the
-    pipeline name. The name can contain underscores. For instance, the
-    **variant_calling** pipeline is called **sequana_pipelines_variant_calling**.
-    Actually, we have aliases and pipeline have usually a short name where
-    **_pipelines** is dropped. So you can refer to a pipeline as
-    **sequana_pipelines_variant_calling** or **sequana_variant_calling**. The reason 
-    for having the long and short versions is to avoid conflict name with Sequana 
-    standalones. For instance, the **sequana_coverage** tool 
-    exists. It is a standalone that study the coverage on a unique sample. We 
-    also have a pipeline to analyse several samples in parallel. Therefore the 
-    sequana_pipeline_coverage pipeline has no alias.
-
-    Future version will use the short version only. 
-
-
-Installation
-============
-
-Given its name, and provided you have installed Sequana, you can install the
-pipeline **name** using::
-
-    pip install sequana_name
-
-where name is replaced by the pipeline name. For instance::
-
-    pip install sequana_fastqc
-
-Since, you want to be up-to-date, add the --upgrade argument::
+For example::
 
     pip install sequana_fastqc --upgrade
+    sequana_fastqc --input-directory my_data
+    cd fastqc && sh fastqc.sh
 
-Usage
-======
+The configuration file ``config.yaml`` lives next to the snakefile in the
+working directory and can be edited before launch. See
+:ref:`pipeline_user_guide` for a walkthrough of the common options.
 
-Each pipeline is different. We recomment to look this complementary section
-:ref:`facilitator`. Generally speaking, the --help argument should be sufficient
-to run most of the pipelines::
+Containers
+==========
 
-    sequana_name --help
+Every Sequana pipeline ships an ``apptainers.yaml`` pointing at the
+matching `damona <https://damona.readthedocs.io>`_ image. Pull them on demand
+with::
 
-The input arguments --input-directory, --input-pattern and --input-readtag will
-help you selecting the input data for the pipeline. Then, you will have to
-introspect the help and the documentation of the pipelines. Each pipeline has
-its own repositoty and living documentaion, which are available in the link here
-below.
+    sequana_<name> ... --use-apptainer
 
-List pipelines
-==============
-This is a non-exhaustive list of pipelines
+This is the recommended way to avoid conda / system tool clashes.
+
+
+Pipeline catalogue
+==================
+
+Quality control
+---------------
+
+.. list-table::
+   :widths: 18 50 32
+   :header-rows: 1
+
+   * - Pipeline
+     - Description
+     - Repository
+   * - ``sequana_fastqc``
+     - Sequencing quality control (FastQC + MultiQC).
+     - https://github.com/sequana/fastqc
+   * - ``sequana_pacbio_qc``
+     - PacBio long-read quality control.
+     - https://github.com/sequana/pacbio_qc
+   * - ``sequana_ribofinder``
+     - Estimate ribosomal content of a sample.
+     - https://github.com/sequana/ribofinder
+
+Mapping and coverage
+--------------------
+
+.. list-table::
+   :widths: 18 50 32
+   :header-rows: 1
+
+   * - Pipeline
+     - Description
+     - Repository
+   * - ``sequana_mapper``
+     - Map reads onto a target genome (bowtie2 / bwa / minimap2).
+     - https://github.com/sequana/mapper
+   * - ``sequana_multicov``
+     - Multi-sample coverage analysis.
+     - https://github.com/sequana/multicov
+
+Variants and RNA-seq
+--------------------
+
+.. list-table::
+   :widths: 18 50 32
+   :header-rows: 1
+
+   * - Pipeline
+     - Description
+     - Repository
+   * - ``sequana_variant_calling``
+     - Variant calling (freebayes + snpEff + coverage).
+     - https://github.com/sequana/variant_calling
+   * - ``sequana_rnaseq``
+     - Full RNA-seq pipeline (alignment, counts, DESeq2 report).
+     - https://github.com/sequana/rnaseq
+
+Long-read pipelines
+-------------------
+
+.. list-table::
+   :widths: 18 50 32
+   :header-rows: 1
+
+   * - Pipeline
+     - Description
+     - Repository
+   * - ``sequana_lora``
+     - Map long reads onto a target genome.
+     - https://github.com/sequana/lora
+   * - ``sequana_nanomerge``
+     - Merge barcoded (or unbarcoded) Nanopore FASTQ files + report.
+     - https://github.com/sequana/nanomerge
+   * - ``sequana_laa``
+     - Long-read amplicon analysis.
+     - https://github.com/sequana/laa
+
+Taxonomy and assembly
+---------------------
+
+.. list-table::
+   :widths: 18 50 32
+   :header-rows: 1
+
+   * - Pipeline
+     - Description
+     - Repository
+   * - ``sequana_multitax``
+     - Taxonomic profiling of multiple samples.
+     - https://github.com/sequana/multitax
+   * - ``sequana_denovo``
+     - De-novo assembly (digital normalisation + assembler + QC).
+     - https://github.com/sequana/denovo
+
+Utilities
+---------
+
+.. list-table::
+   :widths: 18 50 32
+   :header-rows: 1
+
+   * - Pipeline
+     - Description
+     - Repository
+   * - ``sequana_demultiplex``
+     - Demultiplex raw Illumina runs (bcl2fastq / bcl-convert).
+     - https://github.com/sequana/demultiplex
+   * - ``sequana_downsampling``
+     - Downsample FASTQ/BAM files.
+     - https://github.com/sequana/downsampling
+   * - ``sequana_depletion``
+     - Remove or select reads mapping a reference.
+     - https://github.com/sequana/depletion
+   * - ``sequana_revcomp``
+     - Reverse-complement sequence data.
+     - https://github.com/sequana/revcomp
+   * - ``sequana_trf``
+     - Tandem repeats finder wrapper.
+     - https://github.com/sequana/trf
+
+For the complete and always-up-to-date list see the
+`sequana GitHub organisation <https://github.com/sequana>`_.
+
+Pipeline reference pages
+========================
+
+A handful of pipelines have a dedicated page in this manual. They embed the
+README of the corresponding repository via the ``sequana_pipeline`` Sphinx
+directive.
 
 .. toctree::
-    :maxdepth: 1
+   :maxdepth: 1
 
-    pipeline_demultiplex.rst
-    pipeline_fastqc.rst
-    pipeline_mapper.rst
-    pipeline_ribofinder.rst
-    pipeline_pacbio_qc.rst
-    pipeline_quality_control.rst
-    pipeline_rnaseq.rst
-    pipeline_vc.rst
+   pipeline_demultiplex
+   pipeline_fastqc
+   pipeline_mapper
+   pipeline_pacbio_qc
+   pipeline_ribofinder
+   pipeline_rnaseq
+   pipeline_vc
 
-Please see the https://github.com/sequana organisation to get the full list.
+
+Naming convention
+=================
+
+Each pipeline is distributed as ``sequana_<name>`` (PyPI) and installs a
+console script named ``sequana_<name>``. For historical pipelines also exposed
+as standalone tools (``sequana_coverage``), the pipeline form is
+``sequana_pipelines_<name>`` to disambiguate.

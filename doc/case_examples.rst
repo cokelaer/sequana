@@ -1,8 +1,13 @@
 .. _case_examples:
 
-Case Examples
-==============
+Case examples
+=============
 
-.. toctree:: 
+End-to-end walkthroughs combining several Sequana pipelines/standalones on
+real data. These are heavier than the per-pipeline tutorials in
+:ref:`tutorial`.
 
-    case_example_trimming_snp.rst
+.. toctree::
+   :maxdepth: 1
+
+   case_example_trimming_snp

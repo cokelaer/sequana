@@ -11,10 +11,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import importlib.metadata
 import os
 import sys
-
-import importlib.metadata
 
 import sphinx
 
@@ -62,10 +61,15 @@ extensions = [
     "sphinx_gallery.gen_gallery",
     "sphinx_copybutton",
     "sphinxcontrib.googleanalytics",
+    "sphinx_click",
+    "nbsphinx",
     "sequana_sphinxext.snakemakerule",
     "sequana_sphinxext.pipeline",
     "sequana_sphinxext.wrapper",
 ]
+
+# nbsphinx: notebooks are demos, do not execute on build
+nbsphinx_execute = "never"
 # note that the numpy directives is buggy. Example: class and init are not recognised as two entities for the autoclass_content=both here below
 
 math_number_all = False
@@ -116,7 +120,10 @@ release = release
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_trees = ["_build"]
-exclude_patterns = []
+# sphinx-gallery already wires the ``auto_examples/*.ipynb`` files via .rst
+# wrappers — keep nbsphinx out of that directory to avoid duplicate document
+# warnings.
+exclude_patterns = ["auto_examples/*.ipynb", "build/**", "**/.ipynb_checkpoints"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 # default_role = None
@@ -162,14 +169,7 @@ numpydoc_show_class_members = False
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
-on_rtd = os.environ.get("READTHEDOCS", None) == "True"
-if not on_rtd:
-    import sphinx_rtd_theme
-
-    html_theme = "pydata_sphinx_theme"
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-else:
-    html_theme = "pydata_sphinx_theme"
+html_theme = "pydata_sphinx_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

@@ -7,3 +7,6 @@ pillow
 sphinx_gallery
 sphinx_copybutton
 sphinxcontrib_googleanalytics
+sphinx-click
+nbsphinx
+ipykernel

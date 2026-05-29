@@ -3,231 +3,124 @@
 Installation
 ##########################################
 
+.. contents::
+   :local:
+   :depth: 2
+
+
 Quick installation
-===================
+==================
 
 ::
 
     pip install sequana
 
-should work out of the box in the recommended version.
+works out of the box on Python 3.10, 3.11 or 3.12.
 
-Everything you wanted to know
-=============================
-
-
-Here below are the instructions to install Sequana. There are different ways (source, bioconda, singularity, conda environment, pip). Let us summarize the different methods for you.
-
-If you want the latest version of Sequana, you should install it from source (see :ref:`github_method`). Otherwise, you can install a release of **Sequana** from the Pypi website (using **pip**). Note that for pipelines, which are now independent Python packages, we also use Pypi releases. However, third-party dependencies (not Python) should be installed manually. Most of them are provided through **Anaconda** channels.  See the :ref:`installation_conda` Section for details on how to set up Conda.
-
-For instance, if you want to use the sequana_fastqc pipeline you must install **fastqc** yourself, which is not a
-Python package. We cannot provide instructions to install all third-party libraries so there will be some work for you if you want to use the pipelines. However, if you just want to use one of the **Sequana** standalone or pipeline, we also provide **Singularity** containers as explained in the :ref:`singularity_details` section.
+For most pipelines you will also need a few non-Python tools (e.g. samtools,
+bwa, fastqc, kraken2). The easiest way to get those is to combine
+``pip`` with a `mamba <https://mamba.readthedocs.io>`_ / conda environment, or
+to use the provided apptainer containers.
 
 
-.. topic:: Design choice
+.. _installation_pip:
 
-    Since version 0.8.0, we decided to move the pipelines outside of the main
-    sequana library. This choice was made to face the increase of pipelines
-    available in the Sequana project. Indeed, each pipeline comes with its own
-    dependencies, which are not neccesseraly Python. The full installation of
-    Sequana started to be cumbersome even for experienced users. We dealt with this
-    issue using bioconda. Yet, even with such solutions it started to be
-    difficult to manage easy installation. So, as usual, divide and conquer:
-    each pipeline has now its own life cycle outside of Sequana. For example,
-    the variant calling pipeline is hosted on
-    https://github.com/sequana/variant_calling. This way, you can install
-    Sequana quite easily using pip.
-
-
-.. topic:: Sequanix
-
-    Sequanix has now its own repository here: https://github.com/sequana/sequanix and should
-    be installed independently.
-
-
-Latest recommended installation method
+Recommended: virtual environment + pip
 ======================================
 
-Sequana is maintained under Python 3.8 and above  (Dec 2023).
+Sequana is published on `PyPI <https://pypi.org/project/sequana>`_. We strongly
+recommend installing it in a dedicated environment so that dependencies do not
+collide with system packages.
 
-We strongly recommend to use a virtual environment so that (i)
-you can install all requirements without root permissions and (ii) you do
-not interfer with your system.
+::
 
-We will use `conda <https://docs.conda.io/en/latest>`_ for that. Before starting
-you should install and set the channels as explained in the  :ref:`installation_conda` section. Then, create an environment. Here we set Python to 3.10 but could be 3.11 or 3.12:
-
-    conda create --name sequana_env python=3.10
-    source activate sequana_env
-
-pip installation
-----------------
-
-For the latest release of Sequana::
-
-    pip install sequana --upgrade
-
-This will install all Python dependencies such as Pandas, Numpy, etc.
+    mamba create -n sequana_env "python=3.12"
+    mamba activate sequana_env
+    pip install --upgrade sequana
 
 
-pipelines
-----------
-Sequana pipelines are now easily installable using **pip**::
+To install a Sequana **pipeline**, install the matching PyPI package in the
+same environment::
 
-    pip install sequana_rnaseq
     pip install sequana_fastqc
-    pip install sequana_demultiplex
-    pip install sequana_pacbio_qc
-    # etc
+    pip install sequana_rnaseq
+    pip install sequana_variant_calling
+    # ...
 
-The dependencies of this pipeline must be dealt with by the developer or users.
-Each pipeline has its own repository on github (https://github.com/sequana/sequana_PIPELINENAME)
-where more details about specific dependencies are provided. Note, however, that all pipelines
-can be launched with apptainers so theoritecally, only Python is required (and apptainer).
+Each pipeline lives in its own repository under
+https://github.com/sequana and ships its own non-Python dependencies.
+You can let the pipeline tell you what is missing::
 
-A set of predefined pipelines can be installed using::
+    sequana_fastqc --deps
 
-    pip install sequana[pipelines]
+A curated bundle of pipelines can be installed in one go::
 
+    pip install "sequana[pipelines]"
 
-Other solutions (overview)
-========================================
-
-
-#. Bioconda. **Sequana** is available on conda/bioconda as a pre-compiled package::
-
-        # Note that its version may be behind the pypi releases
-        conda install sequana
-
-#. From source. If you prefer to install everything yourself, the source code is available on
-   github (http://github.com/sequana/sequana)::
-
-        git clone https://github.com/sequana/sequana
-        cd sequana
-        pip install sequana .
-
-Singularity/Apptainer
-======================
-
-All containers used with Sequana pipelines are provided within the damona project
-(https://github.com/cokelaer/damona). You do not need to install/download them manually. This will
-be done for you. However, you can cite them since they are all available on Zenodo.
 
 .. _installation_conda:
 
-From bioconda
+Bioconda
+========
+
+Sequana is also published on `bioconda <https://bioconda.github.io/recipes/sequana/README.html>`_
+but the bioconda recipe is usually behind the PyPI release. Use it only if you
+specifically want a conda package.
+
+Set up the channels once::
+
+    conda config --add channels defaults
+    conda config --add channels bioconda
+    conda config --add channels conda-forge
+
+Then::
+
+    mamba create -n sequana_env sequana
+    mamba activate sequana_env
+
+
+.. _installation_apptainer:
+
+Apptainer / Singularity containers
+==================================
+
+All containers used by Sequana pipelines are produced by the
+`damona <https://damona.readthedocs.io>`_ project. You do not need to download
+them manually — Sequana pipelines pull them on demand when you pass
+``--use-apptainer``.
+
+If you want to grab a specific Sequana image yourself, browse
+https://damona.readthedocs.io for the available releases.
+
+
+From GitHub (development version)
+=================================
+
+If you want the unreleased code or wish to contribute, install Sequana with
+`poetry <https://python-poetry.org>`_::
+
+    git clone https://github.com/sequana/sequana
+    cd sequana
+    poetry install --with dev
+
+See the :ref:`developers` section for the test, lint and docs workflow.
+
+
+.. _installation_sequanix:
+
+Sequanix (GUI)
 ==============
 
-If you have not installed **Sequana**, be aware that many dependencies need to
-be compiled (i.e., time consumming and requires proper C compilator).
-Besides, many pipelines rely on third-party software such as BWA or samtools that are not
-Python libraries. We therefore recommend to use **conda** that provides pre-compiled
-software for you.
-
-Install conda executable
-----------------------------
-
-.. warning:: this is currently broken on bioconda. We advise you to install sequana
-   with Python (pip) for the latest versions.
+Since v0.16, **Sequanix** (the graphical front-end for Snakemake workflows)
+lives in its own repository: https://github.com/sequana/sequanix. Install it
+separately if you need a GUI.
 
 
-In practice, we do use `Anaconda <https://conda.readthedocs.io/>`_ . We recommend to
-install **conda** executable via the manual installer (`download <https//continuum.io/downloads>`_).
-You may have the choice between Python 2 and 3. We recommend to choose a Python version 3.
+History
+=======
 
-Add bioconda channels
-------------------------
-
-When you want to install a new package, you have to use this type of syntax::
-
-    conda install ipython
-
-where **ipython** is the package you wish to install. Note that by default,
-**conda** looks on the official Anaconda website (channel). However, there are
-many channels available. We will use the **bioconda** channel. To use it, type
-these commands (once for all)::
-
-    conda config --add channels r
-    conda config --add channels defaults
-    conda config --add channels conda-forge
-    conda config --add channels bioconda
-
-.. warning:: **it is important to add them in this order**, as mentionned on bioconda webpage
-    (https://bioconda.github.io/).
-
-If you have already set the channels, please check that the order is correct.
-With the following command::
-
-    conda config --get channels
-
-You should see::
-
-    --add channels 'r'   # lowest priority
-    --add channels 'defaults'
-    --add channels 'conda-forge'
-    --add channels 'bioconda'   # highest priority
-
-As of May 2020, the recommended order is now::
-
-    conda config --add channels defaults
-    conda config --add channels bioconda
-    conda config --add channels conda-forge
-
-Create an environment
--------------------------
-
-Once **conda** is installed and the channels set, open a new shell.
-Although this is not required strictly speaking, we would
-recommend to create an environment dedicated to Sequana. This environment can
-later be removed without affecting your system or conda installation. A
-**conda** environment is nothing else than a directory and can be created as
-follows::
-
-    conda create --name sequana_env 'python=3.8'
-
-Then, since you may have several environments, you must activate the **sequana**
-environment itself (each time you open a new shell)::
-
-    source activate sequana_env
-
-
-Installation
--------------------
-
-Sequana is on `bioconda <https://bioconda.github.io/>`_. You can follow these `instructions <http://bioconda.github.io/recipes/sequana/README.html>`_ or type::
-
-    conda install sequana
-
-.. _github_method:
-
-From GitHub Source code
-===========================
-
-Finally, if you are a developer and wish to use the latest code, you
-can install **sequana** in develop mode as follows::
-
-    conda create --name sequana 'python=3.10'
-    source activate sequana
-    git clone git@https://github.com:sequana/sequana.git
-    cd sequana
-    pip install -e .
-
-    # to perform testing and documentation:
-    pip install -e .[doc,testing]
-
-
-This should install most of the required dependencies. However, you may need to
-install more packages depending on the pipeline used (related to Qt for
-instance).
-
-.. _singularity_details:
-
-Singularity/Apptainer
-======================
-
-We maintain a version of sequana within the https://damona.readthedocs.io project.
-
-You can download e.g version 0.16.2 and use it as follows::
-
-    wget https://zenodo.org/record/10258126/files/sequana_0.16.2.img
-    singularity sequana_0.16.2.img sequana --help
+Before v0.8, all pipelines shipped inside this repository. The number of
+pipelines and the variety of non-Python dependencies (BWA, Kraken, snpEff,
+DESeq2…) made a single install impractical, so each pipeline now lives in its
+own repository with its own release cycle. See https://github.com/sequana for
+the up-to-date list.

@@ -35,8 +35,17 @@ help:
 
 clean:
 	-rm -rf $(BUILDDIR)/*
+	-rm -rf notebooks
 
-html:
+notebooks:
+	mkdir -p notebooks
+	cp ../notebooks/BAM.ipynb notebooks/
+	cp ../notebooks/coverage.ipynb notebooks/
+	cp ../notebooks/fastq_module.ipynb notebooks/
+	cp ../notebooks/featurecounts.ipynb notebooks/
+	cp ../notebooks/ribodesigner.ipynb notebooks/
+
+html: notebooks
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."

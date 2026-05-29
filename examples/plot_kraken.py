@@ -8,7 +8,8 @@ bridges the gap between those tools, Kraken databases and a simple interface to
 get a quick taxonomic overview of the FastQ content.
 
 For more information, please see the :mod:`sequana.kraken` module documentation.
-Note that this feature is also part of the :ref:`pipeline_quality_control` pipeline.
+The same algorithm is also exposed as a standalone CLI tool
+(see :ref:`standalone_sequana_taxonomy`).
 
 Although we will use the **Sequana** library hereafter, note that there is also
 a standalone application named **sequana_taxonomy**.

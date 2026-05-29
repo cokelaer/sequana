@@ -6,7 +6,7 @@ Developer guide
 This section is a tutorial for developers who wish to improve Sequana, in
 particular how to include a new rule or a new pipeline.
 
-Since v0.8.0, creating a pipeline is very easy since we provide a template. 
+Since v0.8.0, creating a pipeline is very easy since we provide a template.
 
 Yet, before creating a pipeline, we will need the bricks to build it. In
 Snakemake terminology, a brick is called a **rule**.
@@ -33,12 +33,12 @@ How to write a new pipeline in Sequana (the new way)
 First, you need to find a name for your pipeline. Check out the
 https://github.com/sequana organization page to check whether it is not yet
 taken. Note also that pipeline names may need to be different from all rules
-available in sequana. 
+available in sequana.
 
 Find a valid name
 -------------------
 
-All rules and pipelines must have a unique name in Sequana. 
+All rules and pipelines must have a unique name in Sequana.
 We can quickly check that a name is not already taken as follows:
 
 .. doctest::
@@ -50,7 +50,7 @@ We can quickly check that a name is not already taken as follows:
 So, let us name it **count**
 
 
-Create a Snakefile 
+Create a Snakefile
 -------------------------
 A possible code that implements the **count** rule is the following Snakefile:
 
@@ -65,7 +65,7 @@ This is not a tutorial on Snakemake but let us quickly explain this Snakefile.
 The first two lines use **Sequana** library to provide the *filename* as a test file.
 
 
-Then, the rule itself is defined on line 4 where we define the rule named: **count**. We 
+Then, the rule itself is defined on line 4 where we define the rule named: **count**. We
 then provide on line 5 and 6 the expected input and output filenames. On line 7 onwards, we
 define the actual function that counts the number of reads and save the results
 in a TXT file.
@@ -86,7 +86,7 @@ A sequana pipeline
 Somehow, the code above is enough. This is a valid pipeline, which is
 functional. Yet, we have to handle many different pipelines within our
 framework. Therefore, we impose some rules so that arguments are similar,
-testing, documentation are coherent. 
+testing, documentation are coherent.
 
 This is achieved easily using the standalone sequana_start_pipeline as follows::
 
@@ -117,11 +117,8 @@ Press enter 4 times and you get your new pipeline structure that looks like:
         │       ├── main.py
         │       ├── requirements.txt
         │       └── schema.yaml
-        ├── setup.cfg
-        ├── setup.py
-        ├── singularity
-        │   ├── Makefile
-        │   └── Singularity
+        ├── pyproject.toml
+        ├── apptainers.yaml
         └── test
             ├── __init__.py
             └── test_main.py
@@ -150,25 +147,23 @@ Press enter 4 times and you get your new pipeline structure that looks like:
         |       |-- main.py
         |       |-- requirements.txt
         |       |-- schema.yaml
-        |-- setup.cfg
-        |-- setup.py
-        |-- singularity
-        |   |-- Makefile
-        |   |-- Singularity
+        |-- pyproject.toml
+        |-- apptainers.yaml
         |-- test
             |-- __init__.py
 
 
 This is a valid Python package. What you need to do now is copy your Snakfile
 into ./sequana_pipelines/count/count.rules and adapt the main script
-sequana_pipelines/count/main.py to your needs. 
+sequana_pipelines/count/main.py to your needs.
 
-Once ready, install the package::
+Once ready, install the package in editable mode::
 
-    python setup.py install
+    pip install -e .
 
 Check the documentation in the README.rst, add a test in ./test/test_main.py and
-you are ready to upload your package on pypi. 
+you are ready to upload your package on PyPI (typically via the
+``pypi.yml`` GitHub Actions workflow triggered by a ``vX.Y.Z`` tag).
 
 Ideally, you will now add a repository in https://github.com/sequana/ and
 add/commit/push your code.
@@ -183,7 +178,7 @@ code as before:
     True
 
 
-Convention to design a rule 
+Convention to design a rule
 ======================================
 
 
@@ -215,15 +210,15 @@ Use a config file
 
 We encourage developers to NOT set any parameter in the params section of the Snakefile.
 Instead , put all parameters required inside the *config.yaml* file.
-Since each rule has a unique name, we simply add a section with the rule name. For 
+Since each rule has a unique name, we simply add a section with the rule name. For
 instance::
 
     bedtools_genomecov:
         options: ''
 
-This is a YAML formatted file. Note that there is no information here. However, 
+This is a YAML formatted file. Note that there is no information here. However,
 one may provide any parameters understood by the rule (here *bedtools genomecov*
-application) in the *options* field. 
+application) in the *options* field.
 
 We encourage developers to put as few parameters as possible inside the config.
 First to not confuse users and second because software changes with time. Hard
@@ -304,29 +299,22 @@ More information about pipeline design
 The Snakefile/pipeline
 -------------------------
 
-The first thing to notice as compared to a standard Snakefile is that 
-we use rules from Sequana only (for the moment). There are already many rules and they can be 
-added as follows::
+Sequana pipelines reuse rules from the
+`sequana-wrappers <https://github.com/sequana/sequana-wrappers>`_ repository
+through Snakemake's native ``wrapper:`` directive, and helpers from
+`sequana_pipetools <https://github.com/sequana/sequana_pipetools>`_::
 
-    from sequana import snaketools as sm
-    include: sm.module['rulegraph']
+    from sequana_pipetools import snaketools as sm
 
-This will take care of finding the exact location of the module.
+All configuration files are named *config.yaml*.
 
-Second, all configuration file are named *config.yaml*.
-
-So, your pipeline should look like:
+A minimal pipeline looks like:
 
 .. code-block:: python
 
-    import sequana
-    from sequana import snaketools as sm
-    #sm.init("counter", globals())        # see later for explanation
+    from sequana_pipetools import snaketools as sm
 
     configfile: "config.yaml"
-
-    # include all relevant rules
-    include: sm.modules['count']        # if included in sequana/rules
 
     # must be defined as the final rule
     rule pipeline_count:
@@ -353,14 +341,14 @@ pipeline name)::
 
     ::
 
-        sequana init pipeline_count 
-        snakemake -s pipeline_count.rules -f 
+        sequana init pipeline_count
+        snakemake -s pipeline_count.rules -f
 
     Requirements
     ~~~~~~~~~~~~~~
 
     Here you should list the dependencies, which should match the file
-    requirements.txt in ./sequana_pipelines/count/ 
+    requirements.txt in ./sequana_pipelines/count/
 
     .. image:: https://raw.githubusercontent.com/sequana/sequana_count/main/sequana_pipelines/count/dag.png
 
@@ -391,7 +379,7 @@ sections corresponding to a rule as follows::
     #
     # A block comment in docstring format
     #
-    # This means a # character followed by a space and then 
+    # This means a # character followed by a space and then
     # the docstring. The first line made of ##### will be removed
     # and is used to make the documentation clear. No spaces
     # before the section (count:) here below.
@@ -404,7 +392,7 @@ If valid, the block comment is interpreted and a tooltip will appear in
 **Sequanix**.
 
 
-You can also use specific syntax to have specific widgets in Sequanix 
+You can also use specific syntax to have specific widgets in Sequanix
 (see :ref:`sequanix_tutorial`).
 
 First, you may have a file browser widget by adding *_file* after a parameter::
@@ -428,7 +416,7 @@ provide the different items inside the documentation as follows::
 
 .. warning:: Note the double underscore after *_choice*. With this syntax, **Sequanix** will
     interpret the list and include the items in a dropdown button with 3 choices (PCRFree,
-    TruSeq and None). This minimizes typo errors. You may need to add *None* if no selection 
+    TruSeq and None). This minimizes typo errors. You may need to add *None* if no selection
     is a valid choice.
 
 .. warning:: note the = sign between _choice__ and the list of valide values
@@ -454,44 +442,31 @@ Testing with pytest
 ===============================
 
 As a developer, when you change your code, you want to quickly test
-whether the modification(s) did not introduce any regression bugs. To do so,
-just type::
+whether the modification(s) did not introduce regressions. Sequana uses
+`poetry <https://python-poetry.org>`_ for dependency and environment
+management. Install the project with its dev extras once::
 
-    python setup.py test
+    poetry install --with dev
 
-.. note:: we moved from nosetests to pytest. This framwork is slightly more flexible but
-    the main reason to move was to be able to test Qt application. It appeared that
-    it also has nice plugins such as multithreaded testing.
+Then run the full test suite in parallel::
 
-You will need to install **pytest** and some plugins. All package are pure-python so you can install then using
-**pip**::
+    poetry run pytest -n auto
 
-    pip install .[testing]
+The ``dev`` group pulls in:
 
-This command installs:
+- ``pytest``: main runner
+- ``pytest-cov``: coverage support
+- ``pytest-xdist``: parallel execution (``-n auto``)
+- ``pytest-mock``: mocking fixtures
+- ``pytest-timeout``: cap long-running tests
 
-- pytest: main utility
-- pytest-cov: coverage support
-- pytest-qt: fixture for Qt
-- pytest-xdist: allows multi threading
-- pytest-mock: mocking feature
-- pytest-timeout: report longest tests
+For a coverage report::
 
-For instance, you can use in the root directory of Sequana::
+    poetry run pytest -n auto --cov=sequana --cov-report=term-missing --timeout 300
 
-    pytest -v --durations=10  test/ --cov=sequana --cov-report term-missing --timeout 300 -n 4
+To run a single test file, e.g. ``test_pacbio.py``::
 
-Here, -n 4 requires two CPUs to run the tests. The option durations=10 means
-"show the 10 longest tests". 
-
-We also adapt the setup.py and setup.cfg so that you can simply type::
-
-    python setup.py test
-
-If you want to test a single file (e.g. test_pacbio)::
-
-    cd test
-    pytest test_pacbio.py --cov sequana.pacbio --cov-report term-missing
+    poetry run pytest test/test_pacbio.py --cov=sequana.pacbio --cov-report=term-missing
 
 
 
@@ -510,7 +485,7 @@ hereafter. This class provides convenient methods to create the final HTML,
 which takes care of copying CSS and Javascript libraries.
 
 
-To explain how to write a new module report, let us consider a simple example. 
+To explain how to write a new module report, let us consider a simple example.
 We design here below a working example of a module report that takes as input a
 Pandas dataframe (a Pandas series made of a random normal distribution to be precise).
 The module report then creates an HTML page with two sections: a dynamic sortable table
@@ -523,7 +498,7 @@ contains 3 keys:
 
 First, you need to import the base class. Here we also import a convenient
 object called DataTable that will be used to created sortable table in HTML
-using javascript behind the scene. 
+using javascript behind the scene.
 
 .. code-block:: python
 
@@ -584,11 +559,11 @@ cells.
 
 The creation of the data table itself happens on line 5 to line 11 and line
 12-14. There are two steps here: the creation of the HTML table itself (line 13)
-and the Javascript itself (line 12). 
+and the Javascript itself (line 12).
 
 Once we have the HTML data, we can add it into the sections on line 16-19.
 
-The second section is an HTML section with an image. It may be 
+The second section is an HTML section with an image. It may be
 included with a standard approach (using the **img** tag) but one can also use the
 :meth:`~sequana.modules_report.SequanaBaseModule.create_embedded_png` method.
 
@@ -598,7 +573,7 @@ included with a standard approach (using the **img** tag) but one can also use t
     :linenos:
     :pyobject: MyModule.add_image
 
-Here is the full working example: 
+Here is the full working example:
 
 .. literalinclude:: module_example.py
     :language: python
@@ -633,7 +608,7 @@ high probability that you also want to have a multi summary.
 
 We decided to use multiqc (http://multiqc.info/) for that purpose.
 
-We consider the example used here above with the pipeline named **pipeline_count**. 
+We consider the example used here above with the pipeline named **pipeline_count**.
 We suppose that the output is also made of a **summary_count_SAMPLE.json** file created for each sample. Let us assume you took care of creating a nice individual HTML pages (optional).
 
 Now, you wish to create a multiQC report to summarize those individual sample
@@ -646,8 +621,8 @@ In ./sequana/multiqc directory, add a file called pipeline_count.py
 - Take as example the already existing file such as pacbio_qc.py
 - update the sequana/multiqc/__init__.py to add the search pattern for your input (here summary_count*.json)
 - update the sequana/multiqc/config.py to add the search pattern for your input (here summary_count*.json). This way, you can use "multiqc ." and sequana modules will use the pattern stored in config.py
-- update the sequana/multiqc/multiqc_config.yaml to add the search pattern for your input (here summary_count*.json). This way, you can use a user define "multiqc . -c multiqc_config.yaml" 
-- In the setup.py, add the entry point following the example of pacbio_qc
+- update the sequana/multiqc/multiqc_config.yaml to add the search pattern for your input (here summary_count*.json). This way, you can use a user define "multiqc . -c multiqc_config.yaml"
+- In ``pyproject.toml`` (``[project.entry-points."multiqc.modules.v1"]``), add the entry point following the example of pacbio_qc
 - In the ./test/multiqc add a test in test_multiqc.py
 
 To create the summary, we provide a convienent class in summary.Summary.
@@ -655,48 +630,19 @@ To create the summary, we provide a convienent class in summary.Summary.
 
 .. _dev_singularity:
 
-Singularity
-=============
+Apptainer / Singularity containers
+====================================
 
-We provide a Singularity file. It is in the main directory and must be kept
-there to be found by singularity-hub. Each commit to the Singularity file (in the main branch) will trigger this website to build a singularity image. The latest built image can be downloaded as follwos:: 
+Sequana pipelines rely on `apptainer <https://apptainer.org>`_ (formerly
+Singularity) images built and published through the
+`damona <https://damona.readthedocs.io>`_ project.
 
-    singularity pull shub://sequana/sequana
+Each pipeline repository ships an ``apptainers.yaml`` file that lists the
+container URIs (Zenodo / ghcr.io). Pipelines fetch them on the fly when run
+with::
 
-Note that by default, this downloads the latest version. It is equivalent to
-adding a tag named "latest"::
+    sequana_<pipeline> ... --use-apptainer
 
-    singularity pull shub://sequana/sequana:latest
-
-In order to provide **frozen** built, you must use tags. This is achieved by
-adding extension to singularity files in the directory ./singularity. For
-example::
-
-    singularity/Singularity.0_6_2
-
-will contain a recipe that fetches the version 0.6.2 of sequana on pypi. Once
-this file is created, the container is built on singularity hub and should never
-be changed again (except for bugs) !! Althoug you may also create a branch (e.g.
-named release_0_6_2), you still need to keep the singularity filename unique. Indeed, consider
-this case:
-
-- branch main with a singularity/Singularity file
-- branch release_0_6_2 with a singularity/Singularity file
-
-Although those two files (if built on singularity) are in different branches,
-they will have the same URI (sequana/sequana:latest) so the latest will be
-considered and you have two identical containers.
-
-So, whatever solution is chosen, a unique tag must always be added. We decided
-to only use the main branch for now.
-
-When downloading a container without the **--name** argument, your file is
-named::
-
-    sequana-sequana-<release name>_<tag>.simg
-
-This may change in the future version of singularity. Once downloaded, use the
-container as follows:
-
-.. note:: only Singularity files that have been changed since the last commit will be
-    built with Automatic Building in this fashion. Empty commits won't work.
+Building new images is handled by Damona; see its documentation for the recipe
+and release workflow. Do **not** add ``shub://`` references — Singularity Hub
+has been discontinued.

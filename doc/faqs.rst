@@ -1,375 +1,140 @@
-FAQS
-======
+.. _faqs:
 
-Conda related
----------------
+FAQ / Troubleshooting
+=====================
 
-Create a conda environment on IP cluster::
-
-    module load conda
-    conda create --name py37 python=3.7
-    conda activate py37
-
-add channel from where to download packages::
-
-    conda config --add channels r bioconda
-    conda install sequana
+.. contents::
+   :local:
+   :depth: 2
 
 
-What are the dependencies
------------------------------
+Installation
+------------
 
-There are two kind of dependencies. First, the Python libraries such as
-matplotlib or Pandas. Second, the external tools such as BWA (alignment) or
-Kraken (taxonomy). The first kind of tools can be installed using Anaconda and the
-default conda channel. For instance::
+What are the dependencies?
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    conda install pandas
+Two flavours:
 
-The second kind of tools can also be installed using another conda channel
-called **bioconda**. For instance::
+- **Python** libraries (numpy, pandas, matplotlib, …). Installed automatically
+  by ``pip install sequana``.
+- **External** tools used by pipelines (bwa, samtools, kraken2, fastqc, …).
+  Install them via bioconda, your system package manager, or simply run the
+  pipeline with ``--use-apptainer`` to skip the question entirely.
 
-    conda install bwa
-
-Since version 0.12, most pipelines have been moved outside of sequana. Sequana itself only requires::
-
-    conda install kraken2 cd-hit krona
-
-
-Installation issues
------------------------
-
-
-As explained in the previous section, most of the dependencies can be installed
-via Conda. If not, pip is recommended. Yet there are still a few dependencies
-that needs manual installation.
-
-quast
-~~~~~~~~~
-
-http://quast.bioinf.spbau.ru/manual.html#sec1
-
-::
-
-    wget https://downloads.sourceforge.net/project/quast/quast-4.2.tar.gz
-    tar -xzf quast-4.2.tar.gz
-    cd quast-4.2
-
-Alternatively, get the source code from their GitHub (takes a while)::
-
-    git clone https://github.com/ablab/quast
-    cd quast
-    python setup.py install
-
-graphviz
-~~~~~~~~~~~~~~~~~~
-
-graphviz provides an executable called **dot**. If you type **dot** in a shell
-and get this error message::
-
-    Warning: Could not load
-    ...lib/graphviz/libgvplugin_gd.so.6" - file not found
-
-This may be solved by re-installation graphviz using the main anaconda channel
-(instead of bioconda)::
-
-    conda install --override-channels -c anaconda graphviz=2.38.0
-
-:Update April 2017: replace anaconda with conda-forge
-
+Sequana itself only needs ``kraken2``, ``cd-hit`` and ``krona`` to be on the
+``$PATH`` (those are used by the ``sequana_taxonomy`` standalone).
 
 matplotlib
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
 
-If you get errors related to the X connection, you may need to change the
-backend of matplotlib. To do so, go in your home directory and in this directory
+If you see X11 errors when matplotlib tries to open a window (e.g. on a
+cluster), force the headless backend::
 
-    cd /home/user/.config/matplotlib/
+    mkdir -p ~/.config/matplotlib
+    echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc
 
-Check if the file **matplotlibrc** exits, if not, type::
-
-    echo "backend: Agg" > matplotlibrc
-
-or edit the file and make sure the line starting with "backend" uses the Agg
-backend::
-
-    backend: Agg
-
-Save, exit the shell, start a new shell.
+Then start a new shell.
 
 
-pysam / samtools / bzip2
+Input data
+----------
+
+Expected file naming convention
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We have experienced few issues with pysam and samtools. Here are some solutions.
-
-
-::
-
-    from pysam.libchtslib import *
-    ...ImportError: libhts.so.1: cannot open shared object file: No such file or directory
-
-
-This may be solved by removing conda installation and using pip instead::
-
-     conda remove pysam
-     pip install pysam
-
-Another error know for pysam version 0.11.2.2 raises this error::
-
-    ImportError: libbz2.so.1.0: cannot open shared object file: No such file or
-    directory
-
-Downgrading to version 0.11.2.1 and upgrading to working version solves the problem::
-
-    conda install pysam=0.11.2.1
-
-but one reason was also related to the order of the channel in the .condarc
-file. You may get bzip2 from the default channel and not from
-conda-forge (reference: https://github.com/bioconda/bioconda-recipes/issues/5188)
-::
-
-    conda install --override-channels -c conda-forge bzip2
-
-pysam may not compile due to a missing dependency on lzma. Under fedora,
-type::
-
-    yum install liblzma liblzma-devel
-
-
-
-
-qt and pyqt
-~~~~~~~~~~~~~~~~~~
-
-Qt Version
-^^^^^^^^^^
-
-With PyQt 5.12.3 and python3.7, we got lots of errors::
-
-    SystemError: <built-in function connectSlotsByName> returned a result with an error set
-
-This seems to be a PyQt bug according to several github projets based on pyqt.
-It may be fixed a version above. Dowgrading e.g. to pyqt 5.9.2 does not solve
-the problem.
-
-
-
-
-Qt compatibility across platform
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-::
-
-    from PyQt5.QtWebKitWidgets import QWebView
-    ...ImportError: libQt5WebKitWidgets.so.5: cannot open shared object file: No such file or directory
-
-This may be solved by re-installation qt using the main anaconda channel
-(instead of bioconda)::
-
-    conda install --override-channels -c anaconda qt
-
-and possibly::
-
-    pip install PyQtWebEngine
-
-If we believe this issue: https://github.com/conda-forge/pyqt-feedstock/issues/19
-
-
-libselinux
-~~~~~~~~~~~~~~~~~
-
-If you get this error (using **conda install sequana**)::
-
-    ImportError: libselinux.so.1: cannot open shared object file: No such file or directory
-
-it looks like you need to install libselinux on your environment as reported
-`here <https://github.com/sequana/sequana/issues/438>`_.
-
-
-pytz installation
-~~~~~~~~~~~~~~~~~~~~
-
-
-If you get this error::
-
-    ImportError: C extension: No module named 'pytz.tzinfo' not built. If you
-    want to import pandas from the source directory, you may need to run 'python
-    setup.py build_ext --inplace --force' to build the C extensions first.
-
-try this::
-
-    pip uninstall pytz
-    pip install --pre pytz
-
-reference: https://github.com/sequana/sequana/issues/499
-
-
-
-Expected input format
-----------------------------
-
-Most of the pipelines and standalone expect FastQ files with the extension
-**fastq.gz** meaning that files are gzipped.
-
-
-Besides, the filename convention is as follows::
+Most pipelines expect gzipped FastQ files following the pattern::
 
     PREFIX_R1_.fastq.gz
+    PREFIX_R2_.fastq.gz
 
-that is **_R1_** and **_R2_** indicates the paired or single-ended files and
-the PREFIX is used to create directories or reports; it must be present.
-
-.. versionadded:: 0.2
-    more flexible tags are now possible in sequana pipelines and sequanix using
-    e.g. _R[12] in the **input_readtag** in the configuration file of the
-    pipelines.
+The ``_R1_`` / ``_R2_`` tag identifies paired files; ``PREFIX`` becomes the
+sample name. The ``input_readtag`` parameter in the pipeline config accepts
+custom patterns such as ``_R[12]``.
 
 
-Sequanix related
-----------------------
+Pipeline runs
+-------------
 
-For question related to Sequanix, we have a dedicated section in
-:ref:`sequanix_faqs`.
+What to do if a pipeline run fails
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Common causes, in decreasing order of frequency:
 
-QXcbConnection issue
-----------------------
-If you get this error::
+1. **Bad input pattern** — empty sample set, wrong ``--input-readtag``.
+2. **Missing config value** — open ``config.yaml`` and check required fields.
+3. **Cluster resources** — job killed because not enough memory was
+   allocated. Bump the ``resources`` section in ``config.yaml`` or in the
+   SLURM profile.
+4. **Pipeline bug** — report on
+   ``https://github.com/sequana/<pipeline>/issues``.
 
-    QXcbConnection: Could not connect to display localhost:10.0
+For verbose logs::
 
-this is an issue with your Qt backend. You need to change it to Agg.
+    sh <pipeline>.sh --verbose
 
+or rerun snakemake with ``--printshellcmds`` to see the failing command.
 
+Variant Calling — snpEff "Cannot find sequence" error
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+If snpEff fails with::
 
-Variant Calling pipeline
-----------------------------
-
-If snpeff fails with this type of errors::
-
-    java.lang.RuntimeException: Error reading file 'null'
     java.lang.RuntimeException: Cannot find sequence for 'LN831026.gbk'
 
-this may be because your genbank does not contain the sequences.
+…your GenBank file is missing the embedded sequence (header only). Re-download
+the file using::
 
-Another type of errors is that the sequence and genbank are not synchrone. We
-would recommend to use the code here to download the Fasta and genbank:
-
-http://sequana.readthedocs.io/en/main/tutorial.html#new-in-v0-10
-
-
-Quality Control pipeline
----------------------------
-
-Please see the tutorial, user guide or pipelines section and look for the quality control.
-
-Then, if you do not find your solution, please open an issue on github: https://github.com/sequana/sequana/issues
+    from sequana.snpeff import download_fasta_and_genbank
+    download_fasta_and_genbank("LN831026", "myref")
 
 
-Singularity
------------------
+PacBio
+------
 
-If you use the singularity container and get this kind of error::
+pbindex: "read group ID not found"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    singularity shell sequana-sequana-master.img
+If ``pbindex`` complains::
+
+    FATAL pbindex ERROR: [pbbam] BAM header ERROR: read group ID not found: ...
+
+…the BAM is missing the ``@RG`` line (typical after sub-sampling). Re-attach
+the original header::
+
+    samtools view -H ORIGINAL.bam | grep '@RG' > new_header.txt
+    samtools reheader new_header.txt sample.bam > corrected_sample.bam
+
+
+Apptainer / Singularity
+-----------------------
+
+Base home directory does not exist
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If apptainer aborts with::
+
     ERROR  : Base home directory does not exist within the container: /pasteur
-    ABORT  : Retval = 255
 
-it means the container does not know about the Base home directory.
+…the container has no entry for that path. With sudo access::
 
-If you have sudo access, add the missing path as follows::
-
-    sudo singularity shell --writable sequana-sequana-master.img
+    sudo apptainer shell --writable sequana.sif
     mkdir /pasteur
     exit
 
-If you do not have sudo permissions, copy the image on a computer where you have
-such permission, use the same code as above and copy back the new image on the
-computer where you had the issue.
+Without sudo, prepare the image on a machine where you have sudo and ship the
+result back. The cleanest workaround is to bind the host path explicitly::
 
-Finally, try to use the container again using this code::
-
-    singularity shell sequana-sequana-master.img
+    apptainer exec -B /pasteur:/pasteur sequana.sif sequana_fastqc ...
 
 
-I got a error "main thread is not in the main loop"
----------------------------------------------------
+Open an issue
+-------------
 
-::
+If nothing above helps, please open an issue against the affected repository
+(pipeline-specific issues go to ``https://github.com/sequana/<pipeline>``;
+library issues to https://github.com/sequana/sequana/issues). Include:
 
-    Traceback (most recent call last):
-      File
-    ".../lib/python3.5/tkinter/__init__.py",
-    line 627, in after_cancel
-        data = self.tk.call('after', 'info', id)
-    RuntimeError: main thread is not in main loop
-
-This is related to the backend used by matplotlib. This can be ignored. We do
-not have any solution for now, except finding an alternated backend for
-matplotlib. This can be done using a special file called matplotlibrc with this
-content::
-
-    backend: tkagg
-
-where you can replace tkagg with e.g. qt5agg
-
-Snakemake 8.X
------------------
-
-There are several issues with snakemake 8.X. and below 8.28
-
-First, datrie cannot be installed easily. I found a fix as follows but this is not a good solution for end-users.
-
-One fix is::
-
-    export CFLAGS="-Wno-error=incompatible-pointer-types"
-    export CXXFLAGS="-Wno-error=incompatible-pointer-types"
-    pip install datrie
-
-or use "conda install datrie". This is a known issue currently with snakemake https://github.com/pytries/datrie/issues/101
-
-hopefully should be fixed soon
-
-Second issue, far more important is that the wrapper script in Snakemake has changed leading to this error::
-
-    AttributeError: Can't get attribute 'AttributeGuard' on <module 'snakemake.io'
-
-what is going on here is that if we combine singularity and wrapper, we must have python in the container. This is known and has been taken care of in Damona and Sequana projects. However, in snakemake 8.X, the wrapper script requires a specific code available only in 8.X making all containers broken. Not acceptable. So we will stick to snakemake < 8.
-
-
-
-
-
-Installation issue on Mac
---------------------------
-
-On a MacOSx conda environment (PYthon3.9), I could not build **datrie** with this kinf of error message::
-
-    error: command ‘llvm-ar’ failed: No such file or directory
-    ERROR: Failed building wheel for datrie
-    Failed to build datrie
-    Failed to build datrie
-    ERROR: Could not build wheels for datrie, which is required to install pyproject.toml-based projects
-
-The solution was to set the AR variable::
-
-    export AR=/usr/bin/ar
-
-
-pbindex
----------
-
-Got this error when using pbindex on a bam file::
-
-    >|> 20230411 07:50:40.460 -|- FATAL -|- Run -|- 0x7f6a473e5b48|| -|- pbindex ERROR: [pbbam] BAM header ERROR: read group ID not found: a1e75744/3--3
-
-
-The bam file is missing the read group entry. This happenned when subsampling the original file.
-
-Add the RG tag with the correct ID.
-
-You can do::
-
-    samtools view -H ORIGINAL.bam | egrp '@RG' > new_header.txt
-    samtools reheader new_header.txt sample.bam > corrected_sample.bam
+- Sequana version (``sequana --version``)
+- Pipeline name and version
+- The failing command and the full traceback or snakemake log
