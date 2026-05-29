@@ -22,7 +22,7 @@ log = colorlog.getLogger(__name__)
 
 
 class MultiqcModule(BaseMultiqcModule):
-    """ """
+    """MultiQC plugin for the Sequana LAA (PacBio amplicon) pipeline."""
 
     def __init__(self):
         # Initialise the parent object

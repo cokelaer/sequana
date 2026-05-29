@@ -70,7 +70,7 @@ class MACS3Reader:
     and 7-9th columns are the mean value across all positions in the peak region.
     Refer to narrowPeak if you want to fix the value issue in the 5th column
 
-    .. reference:: https://github.com/macs3-project/MACS/blob/master/docs/callpeak.md
+    Reference: https://github.com/macs3-project/MACS/blob/master/docs/callpeak.md
     """
 
     def __init__(self, filename):

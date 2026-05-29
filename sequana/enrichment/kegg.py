@@ -71,8 +71,8 @@ class KEGGPathwayEnrichment:
 
     This class works like a charm for ecoli with GFF that uses gene names.
 
-    For mus musculus, organism is **mmu** (not **mus*). you will need to have
-    a mapping of the Ensembl ID into KEGG IDs (actually gene name).
+    For mus musculus, organism is ``mmu`` (not ``mus``). You will need a
+    mapping of the Ensembl ID into KEGG IDs (actually gene name).
 
     You can perform the conversion using BioServices/BioMart. We have
     implemented a simple function inside Sequana::

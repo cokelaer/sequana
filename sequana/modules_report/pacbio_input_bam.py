@@ -39,7 +39,7 @@ class PacbioInputBAMModule(SequanaBaseModule):
     - images/hist_zmw
 
     to PNG files and the **stats** dictionary created with
-    :meth:`sequana.pacbio.BAMPacbio.stats
+    :meth:`sequana.pacbio.BAMPacbio.stats`.
 
     """
 

@@ -108,26 +108,24 @@ def _print_fasta_contigs_table(contigs):
 @click.option("--output-file", required=False, type=click.Path())
 @click.option("--output-json", required=False, type=click.Path(), help="Export stats to JSON file")
 def summary(**kwargs):
-    """Create a HTML report for various type of NGS formats.
+    """Create a HTML report for various types of NGS formats.
 
-    \b
-    * bamqc
-    * fastq
+    Supported modules:
 
-    This will process all files in the given pattern (in back quotes)
-    sequentially and procude one HTML file per input file.
+    - bamqc
+    - fastq
 
+    This processes all files in the given pattern (in back-quotes)
+    sequentially and produces one HTML file per input.
 
-    Other module all work in the same way. For example, for FastQ files::
+    Other modules work the same way. For example, for FastQ files::
 
         sequana summary one_input.fastq
         sequana summary `ls *fastq`
 
-
     Export to JSON::
 
         sequana summary input.fastq --output-json stats.json
-
     """
     names = kwargs["name"]
     module = kwargs["module"]

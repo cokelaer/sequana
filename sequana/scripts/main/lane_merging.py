@@ -221,19 +221,18 @@ class LaneMerger(Common):
 @click.option("--dry-run", is_flag=True, default=False)
 @click.option("--slurm-queue", default=None)
 def lane_merging(**kwargs):
-    """Merge lanes
+    """Merge lanes.
 
-    This searches for data stored in this format:
+    Looks for data stored either as::
 
-              <sampleID_1>/*fastq.gz
-              <sampleID_2>/*fastq.gz
-              <sampleID_3>/*fastq.gz
+        <sampleID_1>/*fastq.gz
+        <sampleID_2>/*fastq.gz
+        <sampleID_3>/*fastq.gz
 
-          or::
+    or as::
 
-              sampleID_L001_.fastq.gz
-              sampleID_L002_.fastq.gz
-
+        sampleID_L001_.fastq.gz
+        sampleID_L002_.fastq.gz
     """
     lanes = [int(x) for x in eval(kwargs["lanes"])]
     print(lanes)

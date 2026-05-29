@@ -1,16 +1,16 @@
 def stacked_bar(tag, title, datalist):
-    """
+    """Return a CanvasJS stacked-bar script for the supplied data.
 
-    data list should be a list of dictionary formatted as follows
+    ``datalist`` should be a list of dictionaries formatted as::
 
-    {"name": "A"
-     "data": {
-        "R1_mapped": 50,
-        "R2_mapped": 50,
-        "R1_unmapped": 50,
-        "R2_unmapped": 50,
+        {"name": "A",
+         "data": {
+            "R1_mapped": 50,
+            "R2_mapped": 50,
+            "R1_unmapped": 50,
+            "R2_unmapped": 50,
+         }
         }
-    }
     """
     dataitems = ""
     for item in datalist:
@@ -71,7 +71,10 @@ chart.render();
 
 
 class CanvasBar(object):
-    """ """
+    """Render a clickable CanvasJS bar chart from a DataFrame.
+
+    Each row of ``data`` becomes a bar with optional click-through URL.
+    """
 
     def __init__(self, data, title="", tag="", xlabel="", ylabel_max_length=20, links=None, **kargs):
         """

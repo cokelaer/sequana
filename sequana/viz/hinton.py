@@ -42,8 +42,10 @@ def hinton(df, fig=1, shrink=2, method="square", bgcolor="grey", cmap="gray_r", 
         :include-source:
         :width: 80%
 
-        from sequana.viz import hinton
-        df = np.random.rand(20, 20) - 0.5
+        import numpy as np
+        import pandas as pd
+        from sequana.viz.hinton import hinton
+        df = pd.DataFrame(np.random.rand(20, 20) - 0.5)
         hinton(df)
 
 

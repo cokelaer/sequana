@@ -1312,7 +1312,11 @@ class RNADiffResults:
         return subdf
 
     def plot_feature_most_present(self, fontsize=None, xticks_fontsize=None):
-        """"""
+        """Bar plot of the most expressed feature per sample.
+
+        For each sample, identifies the feature with the highest raw count and
+        displays the percentage of total counts attributed to that feature.
+        """
         if fontsize is None:
             fontsize = self.fontsize
         if xticks_fontsize is None:

@@ -67,11 +67,12 @@ class BLAST:
         return df
 
     def best_hit_per_query(self, df):
-        """
-        Return one best hit per qseqid.
+        """Return one best hit per ``qseqid``.
+
         Priority:
-          1) lowest evalue
-          2) highest bitscore
+
+        1. lowest evalue
+        2. highest bitscore
         """
 
         # Ensure numeric types

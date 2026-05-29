@@ -234,8 +234,6 @@ a hover name to be used with this option""",
 def rnadiff(**kwargs):
     """**Sequana RNADiff**: differential analysis and reporting.
 
-     ----
-
      The **Sequana rnadiff** command performs the differential analysis of input RNAseq data using
      DeSEQ2 behind the scene.
 

@@ -105,26 +105,27 @@ class ReadSummary(object):
 
 
 class MultiSummary(SequanaBaseModule):
-    """
-    Used by the pipelines to create a summary based on the content of the
+    """Used by the pipelines to create a summary based on the content of the
     directory. Also used by the standalone application, in which case
     config and pipeline files are not required.
 
     For developers:
 
-    1. In class Summary:
+    1. In class ``Summary``.
+    2. In class ``SequanaMultipleSummary``::
 
-    2 In class SequanaMultipleSummary:
+        try:
+            self.populate_gc()
+        except:
+            pass
 
-        try:self.populate_gc()
-        except:pass
         def populate_gc():
             do something
+
         def get_gc(self):
             return [x.get_gc() for x in self.summaries]
 
-    3: update the jinja file report_multiple_summay
-
+    3. Update the jinja file ``report_multiple_summary``.
     """
 
     def __init__(self, pattern="**/summary.json", output_filename=None, verbose=True, **kargs):

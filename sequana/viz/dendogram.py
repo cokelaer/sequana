@@ -132,29 +132,23 @@ class Dendogram(Linkage):
     metric = property(_get_metric, _set_metric)
 
     def plot(self, num=1, cmap=None, colorbar=True, figsize=(12, 8), fontsize=None):
-        """
+        """Render the dendogram of the input matrix.
 
         Using as input::
 
             df = pd.DataFrame({'A':[1,0,1,1],
                                'B':[.9,0.1,.6,1],
-                            'C':[.5,.2,0,1],
-                            'D':[.5,.2,0,1]})
+                               'C':[.5,.2,0,1],
+                               'D':[.5,.2,0,1]})
 
         .. plot::
             :include-source:
             :width: 80%
 
-            from sequana.viz import heatmap
+            from sequana.viz import heatmap, dendogram
             df = heatmap.get_heatmap_df()
-            h = heatmap.Heatmap(df)
-            h.category_row['A'] = 1
-            h.category_row['C'] = 1
-            h.category_row['D'] = 2
-            h.category_row['B'] = 2
-            h.plot()
-
-
+            d = dendogram.Dendogram(df)
+            d.plot()
         """
         import matplotlib
         import scipy.cluster.hierarchy as hierarchy

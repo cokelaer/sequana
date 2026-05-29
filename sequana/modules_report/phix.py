@@ -52,10 +52,10 @@ class PhixModule(SequanaBaseModule):  # pragma: no cover (used in sequana_qualit
             from sequana.modules_report.fastq_stats import FastQStatsModule
             ff = PhixModule("./SAMPLE/", "test.html")
 
-        Expect to find bwa_mem_stats/bwa_mem_stats.json and phix_stats/*json
+        Expect to find ``bwa_mem_stats/bwa_mem_stats.json`` and ``phix_stats/*json``
 
-        where *json is a pattern SAMPLE_R1_.mapped.json or
-        SAMPLE_R1_.unmapped.json. Same with _R2_
+        where ``*json`` is a pattern ``SAMPLE_R1_.mapped.json`` or
+        ``SAMPLE_R1_.unmapped.json``. Same with ``_R2_``.
 
         """
         super().__init__()

@@ -24,10 +24,18 @@ logger = colorlog.getLogger(__name__)
 
 
 class CanuScanner:
-    """ """
+    """Scan a Canu assembly output directory and collect statistics.
+
+    Parses Canu's correction, trimming and assembly stage files to expose
+    read length distributions, k-mer histograms and overlap/correction
+    summaries through helper methods.
+    """
 
     def __init__(self, path="."):
-        """ """
+        """Initialise the scanner.
+
+        :param str path: path to the root of a Canu output directory.
+        """
         self.path = path
 
         self.data = {}
@@ -46,7 +54,8 @@ class CanuScanner:
     ######################################################################""# CORRECTION
 
     def scan_correction(self):
-        """ """
+        """Read the correction ``load.dat`` file and populate the data dictionary
+        with kept and skipped reads (number of reads and base pairs)."""
         filename = self.getfile("correction/*.gkpStore/load.dat")
         with open(filename, "r") as fin:
             data = fin.read().split("\n")
@@ -62,7 +71,12 @@ class CanuScanner:
         self.data["correction"]["readsSkipped"] = {"reads": reads, "bp": bp}
 
     def hist_read_length(self, bins=100, fontsize=16):
-        """ """
+        """Plot the read length histogram for the correction stage.
+
+        :param int bins: number of bins for the histogram.
+        :param int fontsize: axis label font size.
+        :return: pandas DataFrame with the parsed read information.
+        """
         filename = self.getfile("correction/*gkpStore/reads.txt")
 
         df = pd.read_csv(filename, header=None, sep="\t")
@@ -198,7 +212,12 @@ low quality regions in the reads. """  # from canu report
         self.data["trimming"]["readsSkipped"] = {"reads": reads, "bp": bp}
 
     def hist_trimming_read_length(self, bins=100, fontsize=16):
-        """ """
+        """Plot the read length histogram for the trimming stage.
+
+        :param int bins: number of bins for the histogram.
+        :param int fontsize: axis label font size.
+        :return: pandas DataFrame with the parsed read information.
+        """
         filename = self.getfile("trimming/*gkpStore/reads.txt")
 
         df = pd.read_csv(filename, header=None, sep="\t")

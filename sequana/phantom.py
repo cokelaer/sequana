@@ -28,25 +28,25 @@ __all__ = ["PhantomPeaksReader", "Phantom"]
 
 
 class PhantomPeaksReader:
-    """Manipulate output of PhantomPeaks
+    """Manipulate output of PhantomPeaks.
 
-    The metrics file is tabulated
+    The metrics file is tabulated:
 
-        * Filename
-        * numReads: effective sequencing depth i.e. total number of mapped reads in the input file
-        * estFragLen: comma separated strand cross-correlation peak(s) in decreasing order of correlation. In almost all cases, the top (rst) value in the list represents the predominant fragment length.
-        * corr estFragLen: comma separated strand cross-correlation value(s) in decreasing order (col3 follows the same order)
-        * phantomPeak: Read length/phantom peak strand shift
-        * corr phantomPeak: Correlation value at phantom peak
-        * argmin corr: strand shift at which cross-correlation is lowest
-        * min corr: minimum value of cross-correlation
-        * Normalized strand cross-correlation coecient (NSC) = COL4 / COL8. ;1=no
-    enrichment. NSC >1.1 is good
-        * Relative strand cross-correlation coecient (RSC) = (COL4 - COL8) / (COL6 -
-    COL8); RSC=0 means no signal, <1 low quality and >1 means high enrichment.
-    should aim at RSC>0.8
-        *  QualityTag: Quality tag based on thresholded RSC (codes: -2:veryLow; -1:Low; 0:Medium; 1:High; 2:veryHigh)
-
+    * Filename
+    * numReads: effective sequencing depth i.e. total number of mapped reads in the input file.
+    * estFragLen: comma separated strand cross-correlation peak(s) in decreasing order of correlation.
+      In almost all cases, the top (first) value in the list represents the predominant fragment length.
+    * corr estFragLen: comma separated strand cross-correlation value(s) in decreasing order
+      (col3 follows the same order).
+    * phantomPeak: Read length/phantom peak strand shift.
+    * corr phantomPeak: Correlation value at phantom peak.
+    * argmin corr: strand shift at which cross-correlation is lowest.
+    * min corr: minimum value of cross-correlation.
+    * Normalized strand cross-correlation coefficient (NSC) = COL4 / COL8.
+      NSC > 1.1 is good.
+    * Relative strand cross-correlation coefficient (RSC) = (COL4 - COL8) / (COL6 - COL8);
+      RSC = 0 means no signal, < 1 low quality and > 1 means high enrichment. Aim for RSC > 0.8.
+    * QualityTag: Quality tag based on thresholded RSC (codes: -2:veryLow; -1:Low; 0:Medium; 1:High; 2:veryHigh).
     """
 
     _columns = [

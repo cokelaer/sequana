@@ -27,7 +27,7 @@ __all__ = ["TSNE"]
 
 
 class TSNE(clusterisation.Cluster):
-    """
+    """t-SNE non-linear dimensionality reduction wrapper.
 
     .. plot::
         :include-source:
@@ -42,7 +42,7 @@ class TSNE(clusterisation.Cluster):
         p = TSNE(df, colors={
             "A1": 'r', "A2": 'r', 'A3': 'r',
             "B1": 'b', "B2": 'b', 'B3': 'b'})
-        p.plot(perplixity=2)
+        p.plot(perplexity=2)
 
     """
 

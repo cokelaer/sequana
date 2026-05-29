@@ -31,9 +31,8 @@ class VariantCallingModule(SequanaBaseModule):
     def __init__(self, data):
         """.. rubric:: constructor
 
-        :param data: it can be a csv filename created by
-        sequana.freebayes_vcf_filter or a
-        :class:`freebayes_vcf_filter.Filtered_freebayes` object.
+        :param data: a CSV filename created by ``sequana.freebayes_vcf_filter``
+            or a :class:`freebayes_vcf_filter.Filtered_freebayes` object.
         """
         super().__init__()
         self.title = "Variant Calling Report"

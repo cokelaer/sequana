@@ -1,0 +1,91 @@
+.. _references_genomics:
+
+References (genomics: sequences, motifs, RNA)
+#############################################
+
+.. contents::
+   :local:
+
+Sequence basics
+===============
+
+.. automodule:: sequana.sequence
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.codon
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.biomol
+    :members:
+    :undoc-members:
+
+Regulatory / regulatory-adjacent
+================================
+
+.. automodule:: sequana.kozak
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.telomere
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.cpg_islands
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.restriction
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.kmer
+    :members:
+    :undoc-members:
+
+Non-B DNA / motif detection
+===========================
+
+.. automodule:: sequana.G4hunter
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.hdna
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.zdna
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.imotif
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.cruciforms
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.palindromes
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.find_motif
+    :members:
+    :undoc-members:
+
+RNA structure & rRNA depletion
+==============================
+
+.. automodule:: sequana.rnafold
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.ribodesigner
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.ribodesigner2
+    :members:
+    :undoc-members:

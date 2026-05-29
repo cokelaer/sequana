@@ -41,7 +41,7 @@ files will be named tag.fastq and tag.fasta""",
 )
 @common_logger
 def find_integrated_genes(**kwargs):
-    """Find overlapping reads on host and possible integrated genes
+    """Find overlapping reads on host and possible integrated genes.
 
     This script scans a BAM file and identifies reads that map onto a gene name provided
     by the user. Then, it checks whether these reads also map onto the other gene names.
@@ -50,6 +50,7 @@ def find_integrated_genes(**kwargs):
     For instance a transgene in a mammal genome.
 
     The candidate reads are saved in various files:
+
     - a NAME_info.csv file with information about reads that were found of interest.
       The header is M,S,H,I,D,flag,chr,position,identifier. M, S, H, I and D indicates
       the number of bases that map (M), are soft clipped (S), hard clipped (H), inserted (I),
@@ -66,7 +67,6 @@ def find_integrated_genes(**kwargs):
     To obtain the BAM files, you can use the sequana_mapper pipeline (https://github.com/sequana/mapper).
 
     The BAM file should be indexed with samtools for better performances.
-
     """
 
     gene_name = kwargs["name"].replace(" ", "")

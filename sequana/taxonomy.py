@@ -34,7 +34,11 @@ __all__ = ["NCBITaxonomy", "Taxonomy"]
 
 
 class NCBITaxonomy:
-    """ """
+    """Loader for the NCBI taxonomy ``names.dmp`` / ``nodes.dmp`` files.
+
+    Provides parsing of the raw NCBI taxonomy dumps into pandas DataFrames
+    used by :class:`Taxonomy` for lineage and rank queries.
+    """
 
     def __init__(self, names, nodes):
         """

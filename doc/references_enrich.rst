@@ -37,3 +37,6 @@ Enrichment  tools
     :members:
     :undoc-members:
 
+.. automodule:: sequana.enrichment.quickgo
+    :members:
+    :undoc-members:

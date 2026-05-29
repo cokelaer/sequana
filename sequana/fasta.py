@@ -157,27 +157,27 @@ class FastA:
         """Compute the cumulative sum of values from a dictionary, sorted by name.
 
         This method returns two lists:
+
         - A list of names sorted according to the specified mode.
         - A list of cumulative sums corresponding to the lengths of the sorted names.
 
         Sorting behavior:
-        - If `mode="mixed"` (default), names containing numbers are sorted naturally,
+
+        - If ``mode="mixed"`` (default), names containing numbers are sorted naturally,
           meaning numerical values are sorted as integers while preserving non-numeric strings.
-        - If `mode="alphanum"`, all names are treated as strings and sorted lexicographically.
+        - If ``mode="alphanum"``, all names are treated as strings and sorted lexicographically.
 
-        Parameters:
-        - mode (str): Sorting mode, either `"mixed"` (natural sorting) or `"alphanum"` (lexicographic).
-        - exclude (list): List of names to exclude from processing.
+        :param str mode: Sorting mode, either ``"mixed"`` (natural sorting) or ``"alphanum"`` (lexicographic).
+        :param list exclude: List of names to exclude from processing.
 
-        Returns:
-            - tuple: (sorted_names, cumulative_sums)
-                - sorted_names (list): Names sorted based on the selected mode.
-                - cumulative_sums (list): Cumulative sum of corresponding values.
+        :returns: tuple ``(sorted_names, cumulative_sums)`` where ``sorted_names`` is the list of
+            names sorted by the selected mode and ``cumulative_sums`` is the cumulative sum of
+            corresponding values.
 
         Example:
 
-        If input is `['1', 'maxi', '10', '2']`, mixed mode returns `['1', '2', '10', 'maxi']`,
-        ensuring `['1', 10, 2, 'maxi']` is correctly ordered as `[1, 2, '10', 'maxi']`.
+        If input is ``['1', 'maxi', '10', '2']``, mixed mode returns ``['1', '2', '10', 'maxi']``,
+        ensuring ``['1', 10, 2, 'maxi']`` is correctly ordered as ``[1, 2, '10', 'maxi']``.
         """
 
         assert mode in ["mixed", "alphanum"]

@@ -105,26 +105,22 @@ enriched). All enriched GO terms are stored in tables""",
 @click.option("--output-directory", show_default=True, default="enrichment_panther")
 @common_logger
 def enrichment_panther(**kwargs):
-    """Create a HTML report for various sequana out
+    """Create a HTML report for various sequana outputs.
 
-    \b
-    * enrichment: the output of RNADiff pipeline
+    Input: the enrichment output of the RNADiff pipeline.
 
-    Example for the enrichment module:
+    Example::
 
-        sequana enrichment-panther rnadiff.csv --panther-taxon 10090
+        sequana enrichment-panther rnadiff.csv --panther-taxon 10090 \\
             --log2-foldchange-cutoff 2
 
-        sequana enrichment rnadiff/rnadiff.csv
-            --panther-taxon 189518 \
-            --log2-foldchange-cutoff 2
+        sequana enrichment rnadiff/rnadiff.csv \\
+            --panther-taxon 189518 \\
+            --log2-foldchange-cutoff 2 \\
             --ontologies MF SLIM_MF
 
-    \b
     Valid ontologies are: MF, BP, CC, SLIM_MF, SLIM_BP, SLIM_CC,
-    PROTEIN, "PANTHER_PATHWAY", "REACTOME_PATHWAY"
-
-
+    PROTEIN, PANTHER_PATHWAY, REACTOME_PATHWAY.
     """
     valid = [
         "MF",

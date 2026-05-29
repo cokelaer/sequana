@@ -104,7 +104,15 @@ class SequanaReport(SummaryBase):
         workflow=True,
         Nsamples=1,
     ):
-        """ """
+        """Build a SequanaReport.
+
+        :param dict data: report metadata (pipeline name, version, wrappers, ...).
+        :param str intro: optional HTML introduction text.
+        :param str output_filename: output HTML file name.
+        :param str title: report title.
+        :param bool workflow: include the workflow section.
+        :param int Nsamples: number of samples in the analysis.
+        """
         super(SequanaReport, self).__init__(required_dir=("js", "css"))
         self.json = data
         self.name = data.get("name", "undefined")

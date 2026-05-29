@@ -123,7 +123,7 @@ def quality_solexa_to_quality_sanger(qual):
 
 
 def quality_sanger_to_quality_solexa(qual):
-    """ """
+    """Convert a Sanger (Phred+33) quality score to a Solexa quality score."""
     return 10 * log10(10 ** (qual / 10.0) - 1)
 
 
