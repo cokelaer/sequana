@@ -30,7 +30,7 @@ logger = colorlog.getLogger(__name__)
     default="ID",
     help="A valid attribute to be found in the GFF file and salmon input",
 )
-@click.option("-a", "--feature", default="gene", help="A valid feature")
+@click.option("-F", "--feature", default="gene", help="A valid feature")
 def salmon_cli(**kwargs):
     """Convert output of Salmon into a feature counts file"""
 
