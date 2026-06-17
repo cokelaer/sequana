@@ -98,11 +98,14 @@ class VariantFile:
         _vcf = pysam.VariantFile(self.filename)
         self._header = _vcf.header
 
-        # do we used snpeff ?
-        variant = next(_vcf)
-        variant_dict = self._variant_to_dict(variant)
-        if "effect_type" in variant_dict:
-            self._snpeff = True
+        # do we used snpeff ? (empty VCF has no variant to inspect)
+        try:
+            variant = next(_vcf)
+            variant_dict = self._variant_to_dict(variant)
+            if "effect_type" in variant_dict:
+                self._snpeff = True
+        except StopIteration:
+            self._snpeff = False
 
     def _is_joint(self):
         if self._is_joint is None:

@@ -258,6 +258,7 @@ Version   Description
 0.22.0    * Fix salmon argument handlind, Fix kraken analysis workflow, blast table
             in kraken report, unclassified file creation.
           * add json export to sequana summary, kozakscore to kozak module.
+          * Fix ``html-report`` on empty VCF (no variant) raising StopIteration.
 0.21.2    * Update LAA to use the new variant class
 0.21.1    * Fix bowti2 plot( multiqc parsing)
 0.21.0    * Kozak: add ``plot_logo_bits`` method (information content / bits scaling)
