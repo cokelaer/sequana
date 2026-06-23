@@ -1,8 +1,70 @@
+import pytest
+
 from sequana import GFF3, FastA
-from sequana.kozak import Kozak
+from sequana.kozak import ConsensusBuilder, Kozak
 from sequana.lazy import pandas as pd
 
 from . import test_dir
+
+
+@pytest.fixture
+def pfm():
+    # position-frequency matrix used across ConsensusBuilder tests
+    return pd.DataFrame(
+        {
+            "A": [0.90, 0.45, 0.30, 0.55, 0.10],
+            "C": [0.04, 0.40, 0.30, 0.20, 0.10],
+            "G": [0.03, 0.10, 0.30, 0.15, 0.70],
+            "T": [0.03, 0.05, 0.10, 0.10, 0.10],
+        }
+    )
+
+
+def test_consensus_builder_modes(pfm):
+    cb = ConsensusBuilder(pfm)
+    assert cb.get_consensus(mode="max_only") == "AAAAG"
+    assert cb.get_consensus(mode="majority") == "AnnAG"
+    assert cb.get_consensus(mode="threshold") == "AmvaG"
+    assert cb.get_consensus(mode="relative") == "AmvaG"
+    assert cb.get_consensus(mode="information") == "Amvag"
+
+
+def test_consensus_builder_unknown_mode(pfm):
+    with pytest.raises(ValueError):
+        ConsensusBuilder(pfm).get_consensus(mode="does-not-exist")
+
+
+def test_consensus_builder_cavener(pfm):
+    cb = ConsensusBuilder(pfm)
+    assert cb.get_consensus_cavener() == "AMaAG"
+    assert cb.get_consensus_cavener(notation="expanded") == "AA/CaAG"
+
+
+def test_consensus_builder_notation(pfm):
+    cb = ConsensusBuilder(pfm)
+    # iupac is the default and uses single ambiguity codes
+    assert cb.get_consensus(mode="threshold", notation="iupac") == "AmvaG"
+    # expanded uses slash-joined bases for ambiguous positions
+    assert cb.get_consensus(mode="threshold", notation="expanded") == "Aa/ca/c/gaG"
+
+
+def test_consensus_builder_iupac():
+    cb = ConsensusBuilder(pd.DataFrame())
+    # order independent, and the unsorted 'GC' key still resolves to S
+    assert cb._iupac(["C", "G"]) == "S"
+    assert cb._iupac(["G", "C"]) == "S"
+    assert cb._iupac(["A"]) == "A"
+    assert cb._iupac(["A", "C", "G", "T"]) == "N"
+    assert cb._iupac(["C", "G"], notation="expanded") == "C/G"
+    with pytest.raises(ValueError):
+        cb._iupac(["A", "C"], notation="bad")
+
+
+def test_consensus_builder_all_consensus(pfm, capsys):
+    ConsensusBuilder(pfm).all_consensus()
+    out = capsys.readouterr().out
+    assert "cavener: AMaAG" in out
+    assert "majority: AnnAG" in out
 
 
 def test_kozak():
