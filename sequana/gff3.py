@@ -955,82 +955,89 @@ class GFF3:
             hits = logical_or(self.df[col].apply(lambda x: pattern in str(x)), hits)
         return self.df.loc[hits].copy()
 
-    def is_tRNA_or_ribosomal(self, x):
-        """Return *True* if *x* is **not** a tRNA or ribosomal RNA name.
+    def _is_tRNA_or_rRNA(self, name):
+        """Return ``True`` if *name* denotes a tRNA or ribosomal RNA gene.
 
-        Despite the function name, this method is intended as a boolean *keep*
-        predicate: it returns ``True`` for genes that should be **retained**
-        (i.e. non-tRNA, non-rRNA genes) and ``False`` for genes that should be
-        **removed** (tRNA or rRNA).
+        Matches the tRNA prefix/exact name and the rRNA subunit prefixes
+        (``28S``, ``18S``, ``5.8S``, ``5S``). Non-string inputs (e.g. NaN)
+        return ``False``.
 
-        Used internally to filter out tRNA and rRNA genes when computing
-        Polycistronic Transcription Units (PTUs).
-
-        :param x: gene name or annotation string to test.
-        :return: ``False`` if *x* matches a tRNA or rRNA pattern
-            (``"tRNA-"``, ``"28S"``, ``"5.8S"``, ``"18S"``, ``"5S"`` prefix,
-            or exact ``"tRNA"``), ``True`` otherwise.
+        :param name: gene name or annotation string to test.
         :rtype: bool
         """
-        try:
-            for hit in ["tRNA-", "28S", "5.8S", "18S", "5S"]:
-                if x.startswith(hit):
-                    return False
-            for hit in ["tRNA"]:
-                if x == hit:
-                    return False
-        except AttributeError:
-            pass
-        return True
+        if not isinstance(name, str):
+            return False
+        if name == "tRNA" or name.startswith("tRNA-"):
+            return True
+        for subunit in ("28S", "18S", "5.8S", "5S"):
+            if name.startswith(subunit):
+                return True
+        return False
 
-    def _remove_tRNA_or_ribosomal(self):
-        """Filter the internal dataframe to remove tRNA and ribosomal RNA entries.
+    def is_tRNA_or_ribosomal(self, x):
+        """Deprecated *keep* predicate: ``True`` for genes to **retain**.
 
-        The exact filtering strategy depends on whether a ``combinedAnnotation``
-        column is present (Leishmania donovani style) or not (L. infantum style
-        where tRNA/rRNA have dedicated ``genetic_type`` values).
+        .. deprecated::
+            The inverted semantics were confusing. Use
+            :meth:`_is_tRNA_or_rRNA` (returns ``True`` for tRNA/rRNA) instead.
         """
-        try:
-            # specific to leishmania donovani
-            self._df = self.df[[self.is_tRNA_or_ribosomal(x) for x in self.df.combinedAnnotation]]
-        except:
-            # for L infantum, tRNA and rRNA are separated with their own genetic_type (but duplicated as
-            # CDS/gene/tRNA/exon)
-            # so we first need to remove exon, then gene with gene_biotype in tRNA and rRNA and finally the genetic_type
-            # tRNA and rRNA or even simpler, keep only genes (removing exon and tRNA and rRNA) and amnogst the genes,
-            # filter out the gene_biotype tRNA and rRNA
-            self._df = self.df.query("genetic_type in ['region', 'gene'] and gene_biotype not in ['tRNA', 'rRNA']")
+        return not self._is_tRNA_or_rRNA(x)
+
+    def _filter_coding_genes(self, df=None):
+        """Return a copy of the annotation with tRNA and rRNA genes removed.
+
+        Non-destructive: the internal dataframe is left unchanged. The
+        strategy depends on the available columns:
+
+        * ``combinedAnnotation`` present (*L. donovani* style): filter by name
+          pattern via :meth:`_is_tRNA_or_rRNA`, remove all child features,
+          and keep only ``gene`` rows (since PTUs are based on genes, not mRNA/CDS).
+        * otherwise (*L. infantum* style): tRNA/rRNA carry dedicated
+          ``gene_biotype`` values (and are duplicated as CDS/gene/tRNA/exon),
+          so keep only ``region``/``gene`` rows whose biotype is not tRNA/rRNA.
+
+        :param df: dataframe to filter; defaults to ``self.df``.
+        :rtype: pandas.DataFrame
+        """
+        if df is None:
+            df = self.df
+        if "combinedAnnotation" in df.columns:
+            # Identify tRNA/rRNA gene IDs (from gene rows only)
+            gene_rows = df[df["genetic_type"] == "gene"]
+            trna_rrna_mask = gene_rows["combinedAnnotation"].map(self._is_tRNA_or_rRNA)
+            trna_rrna_ids = gene_rows[trna_rrna_mask]["ID"].values
+            trna_rrna_gene_ids = gene_rows[trna_rrna_mask]["gene_id"].values
+            # Remove all rows: gene IDs, Parent chain (ID or gene_id), and rows with matching gene_id
+            mask = ~(
+                df["ID"].isin(trna_rrna_ids)
+                | df["Parent"].isin(trna_rrna_ids)
+                | df["Parent"].isin(trna_rrna_gene_ids)
+                | df["gene_id"].isin(trna_rrna_gene_ids)
+            )
+            # Keep only gene rows (not mRNA/CDS) for PTU computation
+            return df[mask & (df["genetic_type"] == "gene")].copy()
+        return df.query("genetic_type in ['region', 'gene'] and gene_biotype not in ['tRNA', 'rRNA']").copy()
 
     def get_PTU(self):
         """Compute Polycistronic Transcription Units (PTUs).
 
         PTUs are contiguous groups of genes transcribed from the same strand.
-        tRNA and rRNA genes are excluded before computing directons (groups of
-        genes with the same strand orientation).
+        tRNA and rRNA genes are excluded first (they are transcribed by RNA
+        Pol I/III and are not part of the Pol II polycistrons), then directons
+        are computed on the remaining coding genes.
+
+        Non-destructive: the object's internal dataframe and cached directons
+        are left untouched.
 
         :return: DataFrame with columns ``chromosome``, ``start``, ``stop``,
             ``strand``, and ``length`` (number of genes in the PTU).
         :rtype: pandas.DataFrame
         """
+        coding = self._filter_coding_genes()
+        directons = self._compute_directons(coding)
 
-        self._remove_tRNA_or_ribosomal()
-        # make sure it is correct (df changed)
-        self._directons = None
-        directons = self.directons
-        data = []
-
-        for seqid in sorted(self.df.contig_names):
-            subdf = directons.query("seqid==@seqid")
-            chrom = str(seqid)
-            for _, row in subdf.iterrows():
-                start, stop = row["start"], row["stop"]
-                N = len(self.df.query("seqid==@chrom and start>=@start and stop<=@stop"))
-                strand = row["strand"]
-                data.append([seqid, start, stop, strand, N])
-
-        df = pd.DataFrame(data)
-        df.columns = ["chromosome", "start", "stop", "strand", "length"]
-        return df
+        df = directons.rename(columns={"seqid": "chromosome", "directon_length": "length"})
+        return df[["chromosome", "start", "stop", "strand", "length"]].reset_index(drop=True)
 
     def _get_ssr(self):
         """Compute Strand-Switch Regions (SSRs) between consecutive directons.
@@ -1047,11 +1054,11 @@ class GFF3:
         :rtype: pandas.DataFrame
         """
 
-        # make sure it is correct (if df changed)
-        self.directons = None
+        # make sure it is correct (if df changed): invalidate the cache
+        self._directons = None
         directons = self.directons.copy()
         data = []
-        for seqid in sorted(self.df.contig_names):
+        for seqid in sorted(self.contig_names):
             subdf = directons.query("seqid==@seqid")
 
             for i in range(0, len(subdf) - 1):
@@ -1090,6 +1097,23 @@ class GFF3:
         if self._directons is not None:
             return self._directons
 
+        self._directons = self._compute_directons(self.df)
+        return self._directons
+
+    directons = property(_get_directons)
+
+    def _compute_directons(self, df):
+        """Compute directons from *df* (pure: no caching, no mutation of self).
+
+        A *directon* is a maximal run of adjacent genes on the same strand.
+
+        :param df: annotation dataframe to group.
+        :return: directon dataframe with columns ``seqid``, ``strand``,
+            ``directon_id``, ``start``, ``stop``, ``directon_length`` and
+            ``directon_name``.
+        :rtype: pandas.DataFrame
+        """
+
         def assign_directon_groups(group):
             """Label each gene in *group* with the directon it belongs to."""
             # group is per-chromosome
@@ -1097,12 +1121,12 @@ class GFF3:
             group["directon_id"] = group["strand_shift"].cumsum()
             return group
 
-        df = self.df.groupby("seqid", group_keys=False).apply(assign_directon_groups, include_groups=False)
-        df["seqid"] = self.df["seqid"]
+        tmp = df.groupby("seqid", group_keys=False).apply(assign_directon_groups, include_groups=False)
+        tmp["seqid"] = df["seqid"]
 
         # Aggregate each directon into a single BED line
         directons = (
-            df.groupby(["seqid", "strand", "directon_id"])
+            tmp.groupby(["seqid", "strand", "directon_id"])
             .agg(
                 {
                     "start": "min",
@@ -1137,10 +1161,7 @@ class GFF3:
         directons.sort_values(by=["seqid", "start"], inplace=True)
         directons["directon_id"] = list(range(1, len(directons) + 1))
 
-        self._directons = directons
-        return self._directons
-
-    directons = property(_get_directons)
+        return directons
 
     def directon_to_bed(self, output="directons.bed", colors={"+": "255,0,0", "-": "0,0,255"}):
         """Write directon information to a BED9 file.
