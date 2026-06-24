@@ -66,6 +66,7 @@ dependencies = [
     "numpy (>=2.2.3)",
     "pandas (>=2.2.3)",
     "plotly (>=5.24.1)",
+    "pyBigWig (>=0.3.22)",
     "pysam (>=0.22.1)",
     "rich-click >=1.7.2",
     "scikit-learn (>=1.6.1)",
