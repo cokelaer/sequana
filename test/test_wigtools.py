@@ -1,47 +1,28 @@
 import pytest
 
-from sequana.wigtools import yield_wig_by_chromosome  # replace with actual import
-
-# Fixtures for inline test files
-wig_variable = """\
-variableStep chrom=chr1
-100 1.0
-101 2.0
-102 3.0
-variableStep chrom=chr2
-100 1.0
-101 2.0
-"""
-
-wig_fixed = """\
-fixedStep chrom=chr2 start=200 step=2
-4.0
-5.0
-6.0
-fixedStep chrom=chr3 start=200 step=2
-4.0
-5.0
-6.0
-"""
+from sequana.wigtools import yield_bigwig_by_chromosome
 
 
-def test_yield_wig_by_chromosome(tmp_path):
-    # Write variableStep test file
-    file_var = tmp_path / "var.wig"
-    file_var.write_text(wig_variable)
+def test_yield_bigwig_by_chromosome(tmp_path):
+    pyBigWig = pytest.importorskip("pyBigWig")
 
-    result = list(yield_wig_by_chromosome(file_var))
-    assert len(result) == 2
-    chrom, entries = result[0]
-    assert chrom == "chr1"
-    assert entries == [(100, 1.0), (101, 2.0), (102, 3.0)]
+    bw_file = tmp_path / "test.bw"
+    bw = pyBigWig.open(str(bw_file), "w")
+    bw.addHeader([("chr1", 1000), ("chr2", 1000)])
+    bw.addEntries(
+        ["chr1", "chr1", "chr1"],
+        [0, 100, 200],
+        ends=[100, 200, 300],
+        values=[1.0, 2.0, 3.0],
+    )
+    bw.addEntries(
+        ["chr2", "chr2"],
+        [0, 100],
+        ends=[100, 200],
+        values=[4.0, 5.0],
+    )
+    bw.close()
 
-    # Write fixedStep test file
-    file_fix = tmp_path / "fix.wig"
-    file_fix.write_text(wig_fixed)
-
-    result = list(yield_wig_by_chromosome(file_fix))
-    assert len(result) == 2
-    chrom, entries = result[0]
-    assert chrom == "chr2"
-    assert entries == [(200, 4.0), (202, 5.0), (204, 6.0)]
+    result = dict(yield_bigwig_by_chromosome(bw_file))
+    assert result["chr1"] == [(0, 1.0), (100, 2.0), (200, 3.0)]
+    assert result["chr2"] == [(0, 4.0), (100, 5.0)]
