@@ -37,6 +37,7 @@ logger = colorlog.getLogger(__name__)
 @click.option("--merge", is_flag=True, help="merge all compressed input fasta files into a single file")
 @click.option("--save-contig-name", help="save sequence corresponding to this contig name")
 @click.option("--explode", is_flag=True, help="Create a fasta file for each sequence found in the original files")
+@click.option("--outdir", default=".", show_default=True, help="output directory for --explode (created if missing)")
 @click.option("--extract", type=click.STRING, help="Extra one sequence from a fasta and save in new file")
 @click.option("--reverse-complement", is_flag=True, help="Create a fasta file with reversed complement sequence")
 def fasta(**kwargs):
@@ -81,9 +82,11 @@ def fasta(**kwargs):
         fout = open(output_filename, "wb")
         subprocess.run(["pigz"], stdin=p1.stdout, stdout=fout)
     elif kwargs["explode"]:
+        outdir = kwargs["outdir"]
+        os.makedirs(outdir, exist_ok=True)
         for filename in filenames:
             f = FastA(filename)
-            f.explode()
+            f.explode(outdir=outdir)
     elif kwargs["extract"]:
         for filename in filenames:
             f = FastA(filename)
