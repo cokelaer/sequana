@@ -405,6 +405,10 @@ class SomyScore:
         hybrid=False,
         method="em",
         palette=None,
+        xlabel_fontsize=14,
+        ylabel_fontsize=16,
+        xtick_fontsize=12,
+        ytick_fontsize=12,
     ):
         """
 
@@ -514,8 +518,10 @@ class SomyScore:
         self.info["error"] = error
 
         pylab.clf()
-        sns.boxplot(data=data, x="chr", y="depth", showfliers=False, hue="tag", legend=legend, palette=palette)
-        pylab.xticks(rotation=90)
+        ax = sns.boxplot(data=data, x="chr", y="depth", showfliers=False, hue="tag", legend=legend, palette=palette)
+        pylab.xticks(rotation=90, fontsize=xtick_fontsize)
+        pylab.yticks(fontsize=ytick_fontsize)
+        ax.set_xlabel("Chromosome", fontsize=xlabel_fontsize)
         for h in hlines:
             if h == 1:
                 pylab.axhline(2 * muhat * h, color="r", lw=1, ls="--", label=f"diploid")
@@ -527,7 +533,7 @@ class SomyScore:
                 pylab.axhline(2 * muhat * h, color="r", lw=1, ls="--", label=f"pentaploid")
 
         if normalise:
-            pylab.ylabel("Somy", fontsize=16)
+            pylab.ylabel("Somy", fontsize=ylabel_fontsize)
 
         if hybrid:
             from pylab import fill_betweenx, xlim, ylim

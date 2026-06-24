@@ -102,6 +102,10 @@ click.rich_click.OPTION_GROUPS["somy-score"] = groups.copy()
 )
 @click.option("--threads", type=click.INT, default=4, help="""use 4 threads .""")
 @click.option("--exclude-chromosomes", type=click.STRING, default="", help="""list of chromosomes to exclude""")
+@click.option("--xlabel-fontsize", type=click.INT, default=14, help="""X-axis label font size""")
+@click.option("--ylabel-fontsize", type=click.INT, default=16, help="""Y-axis label font size""")
+@click.option("--xtick-fontsize", type=click.INT, default=12, help="""X-axis tick label font size""")
+@click.option("--ytick-fontsize", type=click.INT, default=12, help="""Y-axis tick label font size""")
 @common_logger
 def somy_score(**kwargs):
     """**Somy score on polyploid (or not)**"""
@@ -165,14 +169,29 @@ def somy_score(**kwargs):
 
     if kwargs["estimated_diploy_coverage"]:
         ss.boxplot(
-            k=kwargs["k"], method=kwargs["method"], hybrid=True, muhat=float(kwargs["estimated_diploy_coverage"])
+            k=kwargs["k"],
+            method=kwargs["method"],
+            hybrid=True,
+            muhat=float(kwargs["estimated_diploy_coverage"]),
+            xlabel_fontsize=kwargs["xlabel_fontsize"],
+            ylabel_fontsize=kwargs["ylabel_fontsize"],
+            xtick_fontsize=kwargs["xtick_fontsize"],
+            ytick_fontsize=kwargs["ytick_fontsize"],
         )
     else:
-        ss.boxplot(k=kwargs["k"], method=kwargs["method"], hybrid=True)
+        ss.boxplot(
+            k=kwargs["k"],
+            method=kwargs["method"],
+            hybrid=True,
+            xlabel_fontsize=kwargs["xlabel_fontsize"],
+            ylabel_fontsize=kwargs["ylabel_fontsize"],
+            xtick_fontsize=kwargs["xtick_fontsize"],
+            ytick_fontsize=kwargs["ytick_fontsize"],
+        )
     ss.somies.to_csv("somies.csv")
     from pylab import savefig
 
-    savefig("sequana_somy.png", dpi=200)
+    savefig("sequana_somy.png", dpi=300)
 
     print(ss.info)
 
