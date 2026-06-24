@@ -1628,3 +1628,85 @@ def kozak_weight_score(sequence, weight_matrix=None, left_flank=10, right_flank=
     """
     scorer = KozakWeightScore(weight_matrix=weight_matrix, left_flank=left_flank, right_flank=right_flank)
     return scorer.score(sequence)
+
+
+def _iupac_match(observed, pattern):
+    """True when each observed IUPAC code is a subset of the pattern code.
+
+    Both ``observed`` and ``pattern`` are equal-length IUPAC strings. A
+    consensus base may itself be ambiguous (e.g. ``R``); it matches when the
+    set of bases it represents is contained in the pattern's set.
+    """
+    from sequana.iuapc import dna_ambiguities
+
+    sets = {code: set(expansion.strip("[]")) for code, expansion in dna_ambiguities.items()}
+    for obs, pat in zip(observed.upper(), pattern):
+        if obs not in sets or pat not in sets:
+            return False
+        if not sets[obs] <= sets[pat]:
+            return False
+    return True
+
+
+def classify_kozak_strength(motif, left=6):
+    """Classify a Kozak consensus motif as optimal, strong, adequate or weak.
+
+    The tiers follow Meijer and Thomas (2002), Biochem J,
+    doi:10.1042/bj20011706. The two key nucleotides are a purine
+    (``R`` = A/G) at the -3 position and a ``G`` at the +4 position (the base
+    just after the ATG codon). U is treated as T. The 6 upstream positions
+    (-6..-1) plus the +4 position are compared, the ATG codon being fixed:
+
+    - ``GCCRCC``-AUG-``G`` -> ``"optimal"`` (full optimal context, both key
+      nucleotides present);
+    - ``NNNRNN``-AUG-``G`` -> ``"strong"`` (both key nucleotides present);
+    - ``NNNRNN``-AUG-(A/C/U) or ``NNN(C/U)NN``-AUG-``G`` -> ``"adequate"``
+      (only one of the two key nucleotides present; termed ``"moderate"`` in
+      Hernandez et al. 2019, Cell);
+    - ``NNN(C/U)NN``-AUG-(A/C/U) -> ``"weak"`` (both key nucleotides absent).
+
+    :param str motif: a Kozak motif. The ATG start codon is located
+        automatically (first ``ATG`` substring); if absent, ``left`` is used
+        as the number of upstream positions and the motif is assumed to be the
+        6 upstream bases immediately followed by the +4 base (no ATG codon).
+    :param int left: number of upstream positions when no ATG is found.
+    :return: one of ``"optimal"``, ``"strong"``, ``"adequate"`` or ``"weak"``.
+
+    ::
+
+        >>> from sequana.kozak import classify_kozak_strength
+        >>> classify_kozak_strength("GCCRCCATGG")
+        'optimal'
+        >>> classify_kozak_strength("AAARAAATGG")
+        'strong'
+        >>> classify_kozak_strength("AAACAAATGG")
+        'adequate'
+        >>> classify_kozak_strength("AAACAAATGA")
+        'weak'
+    """
+    # work in DNA alphabet (U -> T) and upper case
+    motif = motif.upper().replace("U", "T")
+
+    idx = motif.find("ATG")
+    if idx >= 6:
+        upstream = motif[idx - 6 : idx]
+        plus4 = motif[idx + 3] if len(motif) > idx + 3 else ""
+    else:
+        # no ATG codon: motif is the upstream window followed by the +4 base
+        upstream = motif[:left][-6:]
+        plus4 = motif[left] if len(motif) > left else ""
+
+    if len(upstream) < 6 or not plus4:
+        raise ValueError("motif too short: need 6 upstream bases plus the +4 base")
+
+    # the two key nucleotides: purine (R) at -3 (upstream index 3) and G at +4
+    purine_m3 = _iupac_match(upstream[3], "R")
+    g_p4 = _iupac_match(plus4, "G")
+
+    if purine_m3 and g_p4:
+        # both key nucleotides present: optimal if the full GCCRCC context
+        # matches, otherwise strong
+        return "optimal" if _iupac_match(upstream, "GCCRCC") else "strong"
+    if purine_m3 or g_p4:
+        return "adequate"
+    return "weak"

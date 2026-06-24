@@ -1,7 +1,7 @@
 import pytest
 
 from sequana import GFF3, FastA
-from sequana.kozak import ConsensusBuilder, Kozak
+from sequana.kozak import ConsensusBuilder, Kozak, classify_kozak_strength
 from sequana.lazy import pandas as pd
 
 from . import test_dir
@@ -65,6 +65,29 @@ def test_consensus_builder_all_consensus(pfm, capsys):
     out = capsys.readouterr().out
     assert "cavener: AMaAG" in out
     assert "majority: AnnAG" in out
+
+
+def test_classify_kozak_strength():
+    # optimal: full GCCRCC context + G at +4 (R matched by A or G)
+    assert classify_kozak_strength("GCCRCCATGG") == "optimal"
+    assert classify_kozak_strength("GCCACCATGG") == "optimal"
+    assert classify_kozak_strength("GCCGCCATGG") == "optimal"
+    # strong: both key nucleotides (purine at -3, G at +4) but not full context
+    assert classify_kozak_strength("AAAGAAATGG") == "strong"
+    assert classify_kozak_strength("AAARAAATGG") == "strong"
+    # adequate: only one key nucleotide present
+    assert classify_kozak_strength("AAAGAAATGA") == "adequate"  # purine -3, +4 not G
+    assert classify_kozak_strength("AAACAAATGG") == "adequate"  # pyrimidine -3, G +4
+    # weak: both key nucleotides absent
+    assert classify_kozak_strength("AAACAAATGA") == "weak"
+    assert classify_kozak_strength("AAATAAATGT") == "weak"
+    # U accepted as T
+    assert classify_kozak_strength("AAACAAAUGG") == "adequate"
+    # no ATG codon: 6 upstream bases + the +4 base
+    assert classify_kozak_strength("GCCRCCG", left=6) == "optimal"
+    # too short
+    with pytest.raises(ValueError):
+        classify_kozak_strength("GCC")
 
 
 def test_kozak():
