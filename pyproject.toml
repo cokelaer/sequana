@@ -34,6 +34,7 @@ packages = [
     { include = "sequana/modules_report"},
     { include = "sequana/multiqc"},
     { include = "sequana/plots"},
+    { include = "sequana/repeats"},
     { include = "sequana/scripts"},
     { include = "sequana/scripts/main"},
     { include = "sequana/utils"},
