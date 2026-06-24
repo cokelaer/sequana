@@ -4,7 +4,7 @@ from easydev import md5 as md5sum
 from numpy import mean
 
 from sequana import FastA
-from sequana.G4hunter import G4Hunter, G4HunterReader
+from sequana.repeats.G4hunter import G4Hunter, G4HunterReader
 
 from . import test_dir
 

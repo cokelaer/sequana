@@ -31,7 +31,7 @@ logger = colorlog.getLogger(__name__)
     default="G4output",
     help="output directory",
 )
-@click.option("--window", type=click.INT, default=20, show_default=True)
+@click.option("--window", type=click.INT, default=25, show_default=True)
 @click.option("--score", type=click.FLOAT, default=1, show_default=True)
 def g4hunter(**kwargs):
     """Based on G4Hunter
@@ -40,7 +40,7 @@ def g4hunter(**kwargs):
     sequence and gives a quadruplexpropensity score as output.')
 
     """
-    from sequana.G4hunter import G4Hunter, G4HunterReader
+    from sequana.repeats.G4hunter import G4Hunter, G4HunterReader
 
     G4 = G4Hunter(kwargs["infile"], window=kwargs["window"], score=kwargs["score"])
     G4.run(kwargs["outdir"])

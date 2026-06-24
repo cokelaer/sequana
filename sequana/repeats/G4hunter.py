@@ -19,7 +19,7 @@ class G4Hunter:
 
     """
 
-    def __init__(self, fastafile, window=20, score=1):
+    def __init__(self, fastafile, window=25, score=1):
         self.infile = fastafile
         self.window = window
         self.score = score
@@ -75,7 +75,7 @@ class G4Hunter:
         fileout.write(">" + header + "\n Start \t End \t Sequence\t Length \t Score\n")
 
         X = pd.Series(scores)
-        X = X[np.logical_or(X >= 1, X <= -1)]
+        X = X[np.logical_or(X >= self.score, X <= -self.score)]
         for i, score, iw in zip(X.index, X.values, X.index + self.window):
             # iw = i +self.window
             fileout.write(f"{i} \t {iw} \t {line[i:iw]} \t {self.window} \t {score}\n")
@@ -272,7 +272,7 @@ class G4HunterReader:
         with open(bedfile, "w") as fout:
 
             for seqid in self.data_merged.keys():
-                for _, row in self.data_merged[seqid].query("Score>=@threshold or Score<-@threshold").iterrows():
+                for _, row in self.data_merged[seqid].query("Score>=@threshold or Score<=-@threshold").iterrows():
                     start = row["Start"]
                     stop = row["End"]
                     score = row["Score"]

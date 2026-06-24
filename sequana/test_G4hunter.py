@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from sequana.G4hunter import G4HunterReader
+from sequana.repeats.G4hunter import G4HunterReader
 
 
 class TestG4HunterReaderLoadMergedData:

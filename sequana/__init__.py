@@ -70,9 +70,22 @@ from .macs3 import MACS3Reader, PeakConsensus
 from .modules_report.summary import SequanaReport
 from .pacbio import PacbioSubreads
 from .phred import Quality
+from .repeats import (
+    HDNA,
+    ZDNA,
+    APhasedRepeats,
+    Cruciforms,
+    DirectRepeats,
+    G4Hunter,
+    G4HunterReader,
+    GQuadruplex,
+    MirrorRepeats,
+    Repeats,
+    ShortTandemRepeats,
+)
 from .rnadiff import RNADiffResults
 from .running_median import RunningMedian
-from .sequence import DNA, RNA, Repeats, Sequence
+from .sequence import DNA, RNA, Sequence
 from .snpeff import SnpEff
 from .tools import reverse_complement
 from .trf import TRF
