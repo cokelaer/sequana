@@ -1,6 +1,6 @@
 import pytest
 
-from sequana.imotif import IMotif
+from sequana.repeats.imotif import IMotif
 
 from . import test_dir
 

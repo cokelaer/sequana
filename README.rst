@@ -255,6 +255,9 @@ Changelog :memo:
 ========= ==========================================================================
 Version   Description
 ========= ==========================================================================
+0.23.0    * NEW: repeats sub package with non B-DNA modules. we also moved repeat-
+            related modules in it (e.g. repeats.py)
+          * UPDATE: kozak module with cavener rule and ConsensusBuilder
 0.22.0    * Fix salmon argument handlind, Fix kraken analysis workflow, blast table
             in kraken report, unclassified file creation.
           * add json export to sequana summary, kozakscore to kozak module.

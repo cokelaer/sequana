@@ -24,6 +24,7 @@ def get_gene_lists():
     return {"up": up, "down": down, "all": up + down}
 
 
+@pytest.mark.network
 def test_uniprot(mocker, tmpdir):
     gene_lists = get_gene_lists()
 

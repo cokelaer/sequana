@@ -72,6 +72,7 @@ from .pacbio import PacbioSubreads
 from .phred import Quality
 from .repeats import (
     HDNA,
+    TRF,
     ZDNA,
     APhasedRepeats,
     Cruciforms,
@@ -79,7 +80,9 @@ from .repeats import (
     G4Hunter,
     G4HunterReader,
     GQuadruplex,
+    IMotif,
     MirrorRepeats,
+    Palindromes,
     Repeats,
     ShortTandemRepeats,
 )
@@ -88,5 +91,4 @@ from .running_median import RunningMedian
 from .sequence import DNA, RNA, Sequence
 from .snpeff import SnpEff
 from .tools import reverse_complement
-from .trf import TRF
 from .variants import VariantFile

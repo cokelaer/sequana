@@ -89,3 +89,52 @@ def test_load_merged_data_single_sequence(tmpdir):
     assert "seq_single" in reader.data_merged
     assert len(reader.data_merged["seq_single"]) == 1
     assert reader.data_merged["seq_single"].iloc[0]["Score"] == 2.5
+
+
+def test_load_merged_data_invalid_items_count(tmpdir):
+    # Lines with the wrong number of columns are skipped
+    test_file = tmpdir.join("invalid.txt")
+    test_file.write(
+        ">seq1\n"
+        "Start\tEnd\tSequence\tLength\tScore\n"
+        "0\t20\tACGT\t4\n"  # only 4 items, must be skipped
+        "10\t30\tTGCA\t4\t1.5\n"  # valid line
+    )
+
+    reader = G4HunterReader()
+    reader.load_merged_data(str(test_file))
+
+    assert len(reader.data_merged["seq1"]) == 1
+
+
+def test_load_merged_data_whitespace_handling(tmpdir):
+    # Whitespace around values is stripped
+    test_file = tmpdir.join("whitespace.txt")
+    test_file.write(">seq1\n" "Start\tEnd\tSequence\tLength\tScore\n" "  0  \t  20  \t  ACGT  \t  4  \t  1.5  \n")
+
+    reader = G4HunterReader()
+    reader.load_merged_data(str(test_file))
+
+    assert reader.data_merged["seq1"].iloc[0]["Start"] == 0
+    assert reader.data_merged["seq1"].iloc[0]["Sequence"] == "ACGT"
+
+
+def test_load_merged_data_negative_scores(tmpdir):
+    test_file = tmpdir.join("negative.txt")
+    test_file.write(">seq1\n" "Start\tEnd\tSequence\tLength\tScore\n" "0\t20\tACGT\t4\t-3.2\n")
+
+    reader = G4HunterReader()
+    reader.load_merged_data(str(test_file))
+
+    assert reader.data_merged["seq1"].iloc[0]["Score"] == -3.2
+
+
+def test_load_merged_data_header_extraction(tmpdir):
+    # Only the first token of the header line is used as the sequence id
+    test_file = tmpdir.join("header.txt")
+    test_file.write(">chromosome_1 extra info\n" "Start\tEnd\tSequence\tLength\tScore\n" "0\t20\tACGT\t4\t1.0\n")
+
+    reader = G4HunterReader()
+    reader.load_merged_data(str(test_file))
+
+    assert "chromosome_1" in reader.data_merged

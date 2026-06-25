@@ -1,8 +1,16 @@
+"""i-motif (C-rich) secondary-structure detection.
+
+An *i-motif* is the cytosine-rich counterpart of a G-quadruplex: four or more
+runs of C (each at least ``min_tract`` bases) separated by short loops fold into
+an intercalated structure. Detection is a single regular expression scan.
+"""
 import re
 
 import pandas as pd
 
 from sequana import FastA
+
+_COLS = ["seqid", "start", "end", "length", "sequence"]
 
 
 class IMotif:
@@ -10,7 +18,7 @@ class IMotif:
         self.fasta_file = fasta_file
         self.min_tract = min_tract
         self.max_loop = max_loop
-        self.df = pd.DataFrame(columns=["seqid", "start", "end", "length", "sequence"])
+        self.df = pd.DataFrame(columns=_COLS)
 
         # Define pattern for i-motif
         self.pattern = re.compile(
@@ -22,8 +30,7 @@ class IMotif:
         fa = FastA(self.fasta_file)
         results = []
 
-        for seqid in fa.names:
-            sequence = fa.sequences[fa.names.index(seqid)]
+        for seqid, sequence in zip(fa.names, fa.sequences):
             for match in self.pattern.finditer(sequence):
                 start = match.start()
                 end = match.end()
@@ -31,7 +38,7 @@ class IMotif:
                     {"seqid": seqid, "start": start, "end": end, "length": end - start, "sequence": match.group()}
                 )
 
-        self.df = pd.DataFrame(results)
+        self.df = pd.DataFrame(results, columns=_COLS)
 
     def to_bed(self, output_file):
         if self.df.empty:

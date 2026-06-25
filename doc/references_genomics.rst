@@ -87,11 +87,15 @@ Non-B DNA / motif detection
     :members:
     :undoc-members:
 
-.. automodule:: sequana.imotif
+.. automodule:: sequana.repeats.palindromes
     :members:
     :undoc-members:
 
-.. automodule:: sequana.palindromes
+.. automodule:: sequana.repeats.imotif
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.repeats.trf
     :members:
     :undoc-members:
 

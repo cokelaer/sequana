@@ -12,7 +12,7 @@ def compute_melting_temperature_wallace_rule(sequence):
 
     This formula assumes standard conditions and is less accurate for longer sequences or those with unusual salt concentrations.
     """
-    counter = Counter(sequence)
+    counter = Counter(sequence.upper())
     return 2 * (counter["A"] + counter["T"]) + 4 * (counter["G"] + counter["C"])
 
 
@@ -21,12 +21,12 @@ def compute_melting_temperature_salt_adjusted(sequence):
 
     This rule is a quick estimation for sequences greater than 14bp in length (Chester and Marshak 1993)
 
-        Tm(Celsius) = 64.9 + 0.41 x %GC - 650 / (sequence length)
+        Tm(Celsius) = 69.3 + 0.41 x %GC - 650 / (sequence length)
 
     This formula accounts for the stability conferred by GC content but does not account for secondary structures or mismatches.
 
     """
-    counter = Counter(sequence)
+    counter = Counter(sequence.upper())
     return 69.3 + 41 * (counter["G"] + counter["C"]) / len(sequence) - 650.0 / len(sequence)
 
 

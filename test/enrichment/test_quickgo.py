@@ -1,10 +1,12 @@
 import pandas as pd
+import pytest
 
 from sequana.enrichment.quickgo import QuickGOGraph
 
 from . import test_dir
 
 
+@pytest.mark.network
 def test_get_graph():
     u = QuickGOGraph()
     IDs = ["GO:0016829", "GO:0051287", "GO:0000166", "GO:0022857", "GO:0051287"]
@@ -18,6 +20,7 @@ def test_save_chart(tmpdir):
     u.save_chart(df, outpng)
 
 
+@pytest.mark.network
 def test_get_go_description():
 
     u = QuickGOGraph()

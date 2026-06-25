@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "sequana"
-version = "0.22"
+version = "0.23"
 description = "A set of standalone application and pipelines dedicated to NGS analysis"
 authors = [{name="Thomas Cokelaer", email="<thomas.cokelaer@pasteur.fr>"}]
 license = { file = "LICENSE" }
@@ -68,6 +68,11 @@ dependencies = [
     "plotly (>=5.24.1)",
     "pyBigWig (>=0.3.22)",
     "pysam (>=0.22.1)",
+    # requests 2.33/2.34 add an unresolved `cookies: 'RequestsCookieJar'`
+    # annotation to requests.models.Response, which makes typing.get_type_hints
+    # fail and breaks requests-cache (used by bioservices) -> cached calls return
+    # None. Pin below 2.33 until upstream fixes it.
+    "requests (>=2.32,<2.33)",
     "rich-click >=1.7.2",
     "scikit-learn (>=1.6.1)",
     "scipy (>=1.14)",

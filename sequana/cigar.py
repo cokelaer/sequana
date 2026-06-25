@@ -13,10 +13,9 @@
 import re
 from collections import defaultdict
 
-"""
-Note: could use pysam most probably to improve the speed.
-"""
 import colorlog
+
+# Note: pysam could probably be used to improve the speed of this module.
 
 logger = colorlog.getLogger(__name__)
 
@@ -93,7 +92,7 @@ class Cigar:
         return "Cigar( {} )".format(self._cigarstring)
 
     def __len__(self):
-        return sum([y for x, y in self._decompose() if x in "MIS=X"])
+        return self.get_query_length()
 
     def _decompose(self):
         for num, op in self.pattern.findall(self._cigarstring):
@@ -163,11 +162,9 @@ class Cigar:
 
         """
         counts = [0] * len(self.types)
-        d = self.as_dict()
-        for op, val in d.items():
-            idx = self.types.find(op)
-            if idx != -1:
-                counts[idx] = val
+        # _decompose only yields ops present in self.types, so find() always hits
+        for op, val in self.as_dict().items():
+            counts[self.types.index(op)] = val
         return counts
 
     def get_query_length(self) -> int:
@@ -179,111 +176,51 @@ class Cigar:
         return sum(count for op, count in self._decompose() if op in "MDN=X")
 
 
-def fetch_exon(chrom, start, cigar):
+# CIGAR op codes (pysam convention):
+#   0 -> M alignment match     1 -> I insertion       2 -> D deletion
+#   3 -> N skipped/intron       4 -> S soft clipping
+# Insertions (op 1) do not consume the reference, so they never advance the
+# cursor; every other op above does.
+
+
+def _fetch(chrom, start, cigar, target):
+    """Walk a list of ``(op, size)`` tuples and collect bounds for ``target`` op.
+
+    The reference cursor advances by ``size`` for M (0), D (2), N (3) and
+    S (4); insertions (1) and any other op do not advance it. When the op
+    matches ``target`` a ``(chrom, start, end)`` bound is recorded; insertions
+    are the exception and are recorded as ``(chrom, start, size)``.
+    """
     chrom_start = start
-    exon_bound = []
+    bounds = []
     for c, size in cigar:
-        if c == 0:
-            exon_bound.append((chrom, chrom_start, chrom_start + size))
+        if c == target:
+            if c == 1:  # insertion: stored as (chrom, start, size), no end
+                bounds.append((chrom, chrom_start, size))
+            else:
+                bounds.append((chrom, chrom_start, chrom_start + size))
+        if c in (0, 2, 3, 4):
             chrom_start += size
-        elif c == 1:
-            continue
-        elif c == 2:
-            chrom_start += size
-        elif c == 3:
-            chrom_start += size
-        elif c == 4:  # FIXME do we want to include this in the exon
-            chrom_start += size
-        else:
-            continue
-    return exon_bound
+    return bounds
+
+
+def fetch_exon(chrom, start, cigar):
+    return _fetch(chrom, start, cigar, 0)
 
 
 def fetch_intron(chrom, start, cigar):
-    # equivalence:
-    # c = 0 -> M
-    # c = 1 -> I
-    # c = 2 -> D
-    # c = 3 -> N gap/intron
-    # c = 4 -> S soft clipping
-    chrom_start = start
-    intron_bound = []
-    for c, size in cigar:
-        if c == 0:
-            chrom_start += size
-        elif c == 1:
-            continue
-        elif c == 2:
-            chrom_start += size
-        elif c == 3:
-            intron_bound.append((chrom, chrom_start, chrom_start + size))
-            chrom_start += size
-        elif c == 4:  # not including soft clipping in the intron
-            continue
-        else:
-            continue
-    return intron_bound
+    return _fetch(chrom, start, cigar, 3)
 
 
 def fetch_clip(chrom, start, cigar):
-    chrom_start = start
-    clip_bound = []
-    for c, size in cigar:
-        if c == 0:
-            chrom_start += size
-        elif c == 1:
-            continue
-        elif c == 2:
-            chrom_start += size
-        elif c == 3:
-            chrom_start += size
-        elif c == 4:
-            clip_bound.append((chrom, chrom_start, chrom_start + size))
-            chrom_start += size
-        else:
-            continue
-    return clip_bound
+    return _fetch(chrom, start, cigar, 4)
 
 
 def fetch_deletion(chrom, start, cigar):
-    chrom_start = start
-    deletion_bound = []
-    for c, size in cigar:
-        if c == 0:
-            chrom_start += size
-        elif c == 1:
-            continue
-        elif c == 2:
-            deletion_bound.append((chrom, chrom_start, chrom_start + size))
-            chrom_start += size
-        elif c == 3:
-            chrom_start += size
-        elif c == 4:
-            chrom_start += size
-        else:
-            continue
-    return deletion_bound
+    return _fetch(chrom, start, cigar, 2)
 
 
 def fetch_insertion(chrom, start, cigar):
-    # NOTE that the returned insertions are stored as
-    # chrom, start, size rather than chrom, start, end in other fetchers
-    # functions
-    chrom_start = start
-    insertion_bound = []
-    for c, size in cigar:
-        if c == 0:
-            chrom_start += size
-        elif c == 1:
-            # See note above
-            insertion_bound.append((chrom, chrom_start, size))
-            continue
-        elif c == 2:
-            chrom_start += size
-        elif c == 3:
-            chrom_start += size
-        elif c == 4:
-            chrom_start += size
-        else:
-            continue
-    return insertion_bound
+    # NOTE: insertions are stored as (chrom, start, size) rather than
+    # (chrom, start, end) as in the other fetchers.
+    return _fetch(chrom, start, cigar, 1)
