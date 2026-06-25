@@ -40,10 +40,16 @@ class KEGGHelper:
         results = []
         definition = []
         for i, item in enumerate(k.organismIds):
-            results.append(k.parse(k.get(f"gn:{item}"))["NAME"])
-            definition.append(k.parse(k.get(f"gn:{item}"))["ORG_CODE"])
-            print(i, Nmax)
-            if Nmax and i + 1 >= Nmax:
+            entry = k.get(f"gn:{item}")
+            # On a network/server hiccup, bioservices returns an
+            # HTTPResponseError (or status code) instead of a string. Skip it.
+            if not isinstance(entry, str):
+                logger.warning(f"Could not retrieve gn:{item} ({entry!r}); skipping")
+                continue
+            parsed = k.parse(entry)
+            results.append(parsed["NAME"])
+            definition.append(parsed["ORG_CODE"])
+            if Nmax and len(results) >= Nmax:
                 break
 
         results = [x[0] for x in results]
