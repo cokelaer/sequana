@@ -141,3 +141,49 @@ def test_get_sample_sheet_version_v1():
     filename = f"{test_dir}/data/iem/good/test_expdesign_miseq_illumina_1.csv"
     assert get_sample_sheet_version(filename) == "v1"
     assert isinstance(SampleSheetFactory(filename), SampleSheet)
+
+
+def test_get_sample_sheet_version_v2_header_fallback():
+    # No [BCLConvert_*] sections, but FileFormatVersion,2 in [Header] -> v2
+    filename = f"{test_dir}/data/iem/test_samplesheet_v2_header_only.csv"
+    assert get_sample_sheet_version(filename) == "v2"
+    assert isinstance(SampleSheetFactory(filename), BCLConvert)
+
+
+def test_bclconvert_missing_required_sections():
+    filename = f"{test_dir}/data/iem/test_samplesheet_v2_bclconvert.csv"
+    ss = BCLConvert(filename)
+    del ss.sections["Bclconvert_Settings"]
+    del ss.sections["Bclconvert_Data"]
+    errors = [c["msg"] for c in ss.checker() if c["status"] == "Error"]
+    assert any("BCLConvert_Settings" in m for m in errors)
+    assert any("BCLConvert_Data" in m for m in errors)
+
+
+def test_bclconvert_file_format_version_checks():
+    filename = f"{test_dir}/data/iem/test_samplesheet_v2_bclconvert.csv"
+    ss = BCLConvert(filename)
+
+    # missing FileFormatVersion -> Warning
+    ss.sections.pop("Header", None)
+    assert ss._check_file_format_version()["status"] == "Warning"
+
+    # wrong FileFormatVersion -> Error
+    ss.sections["Header"] = ["FileFormatVersion,3"]
+    assert ss._check_file_format_version()["status"] == "Error"
+
+
+def test_bclconvert_sample_name_ignored_warning():
+    filename = f"{test_dir}/data/iem/test_samplesheet_v2_bclconvert.csv"
+    ss = BCLConvert(filename)
+    ss.sections["Bclconvert_Data"] = ["Sample_ID,Sample_Name,index", "S1,foo,ACGTACGTAC"]
+    assert ss._check_sample_name_ignored()["status"] == "Warning"
+
+
+def test_deprecated_iem_class():
+    import sequana.iem as iem_module
+
+    filename = f"{test_dir}/data/iem/good/test_expdesign_miseq_illumina_1.csv"
+    # the legacy IEM subclass just warns and behaves like SampleSheet
+    obj = iem_module.IEM(filename)
+    assert obj.df is not None
