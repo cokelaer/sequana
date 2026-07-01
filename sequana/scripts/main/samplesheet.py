@@ -12,7 +12,7 @@
 import colorlog
 import rich_click as click
 
-from sequana.iem import SampleSheet
+from sequana.iem import SampleSheetFactory
 from sequana.scripts.utils import CONTEXT_SETTINGS
 
 logger = colorlog.getLogger(__name__)
@@ -33,11 +33,11 @@ def samplesheet(**kwargs):
     """Standalone application to validate/check Illumina sample sheet"""
     name = kwargs["name"]
     if kwargs["check"]:
-        iem = SampleSheet(name)
+        iem = SampleSheetFactory(name)
         iem.validate()
         logger.info("SampleSheet looks correct")
     elif kwargs["full_check"]:
-        iem = SampleSheet(name)
+        iem = SampleSheetFactory(name)
 
         checks = iem.checker()
         for check in checks:
@@ -56,10 +56,10 @@ def samplesheet(**kwargs):
                 print(f"\u2714 {check['status']}, {check['msg']}")
 
     elif kwargs["extract_adapters"]:
-        iem = SampleSheet(name)
+        iem = SampleSheetFactory(name)
         iem.to_fasta()
     elif kwargs["quick_fix"]:
-        iem = SampleSheet(name)
+        iem = SampleSheetFactory(name)
         if kwargs["output"]:
             filename = kwargs["output"]
         else:  # pragma: no cover

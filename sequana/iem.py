@@ -23,7 +23,7 @@ from sequana.lazy import pandas as pd
 logger = colorlog.getLogger(__name__)
 
 
-__all__ = ["SampleSheet", "IEM"]
+__all__ = ["SampleSheet", "IEM", "BCLConvert", "get_sample_sheet_version", "SampleSheetFactory"]
 
 
 class SampleSheet:
@@ -90,6 +90,14 @@ class SampleSheet:
     ]
 
     expected_data_headers = {"SE": [], "PE": []}
+
+    #: name of the section holding the tabular sample data (title-cased). Overridden in
+    #: :class:`BCLConvert` where the section is ``[BCLConvert_Data]``.
+    data_section = "Data"
+
+    #: name of the settings section (title-cased). Overridden in :class:`BCLConvert`
+    #: where the required section is ``[BCLConvert_Settings]``.
+    settings_section = "Settings"
 
     def __init__(self, filename):
 
@@ -160,11 +168,11 @@ class SampleSheet:
         self.sections = {k.title(): v for k, v in self.sections.items()}
 
     def _get_df(self):
-        if "Data" in self.sections:
-            if self.sections["Data"]:
+        if self.data_section in self.sections:
+            if self.sections[self.data_section]:
                 # cope with the case of comma or semicolon separators.
-                df1 = pd.read_csv(io.StringIO("\n".join(self.sections["Data"])), index_col=False, sep=",")
-                df2 = pd.read_csv(io.StringIO("\n".join(self.sections["Data"])), index_col=False, sep=";")
+                df1 = pd.read_csv(io.StringIO("\n".join(self.sections[self.data_section])), index_col=False, sep=",")
+                df2 = pd.read_csv(io.StringIO("\n".join(self.sections[self.data_section])), index_col=False, sep=";")
 
                 if len(df1.columns) > len(df2.columns):
 
@@ -262,6 +270,22 @@ class SampleSheet:
 
     def _check_settings(self):
 
+        # Detect malformed lines that are not valid 'key,value' pairs. _get_settings
+        # tolerates them so downstream callers do not crash; here we surface a clear
+        # error instead of letting a parsing exception leak (e.g. sheets mangled by
+        # spreadsheet software into ';'-separated values or with stray ';;;').
+        for line in self.sections.get(self.settings_section, []):
+            if line.strip() and "," not in line:
+                return {
+                    "name": "check_settings",
+                    "msg": (
+                        f"The [Settings] section has a line that is not a valid "
+                        f"'key,value' pair: '{line}'. This is often caused by stray "
+                        f"';' separators (e.g. added by spreadsheet software)."
+                    ),
+                    "status": "Error",
+                }
+
         for k, v in self.settings.items():
 
             # checks ACGT content (no acgt allowed)
@@ -269,6 +293,7 @@ class SampleSheet:
                 x.lower()
                 for x in [
                     "Adapter",
+                    "AdapterRead1",
                     "TrimAdapter",
                     "AdapterRead2",
                     "TrimAdapterRead2",
@@ -559,8 +584,8 @@ class SampleSheet:
             return {"msg": "Columns of the data section looks good", "status": "Success"}
 
     def _get_data_length(self):
-        N = len(set([x.count(",") for x in self.sections["Data"]]))
-        if len(self.sections["Data"]) >= 2 and N == 1:
+        N = len(set([x.count(",") for x in self.sections[self.data_section]]))
+        if len(self.sections[self.data_section]) >= 2 and N == 1:
             return True
         else:
             return False
@@ -612,36 +637,41 @@ class SampleSheet:
 
         return {"msg": "Indices length could not be read. ", "status": "Success"}
 
-    def _check_data_section_csv_format(self):
-
-        N = len(set([x.count(",") for x in self.sections["Data"]]))
+    def _check_csv_format(self, section, name, level="Error"):
+        # Generic CSV-consistency check for a tabular section. ``level`` is the
+        # status used when the section is malformed (Error for the mandatory data
+        # section, Warning for auxiliary sections such as [Cloud_Data]).
+        N = len(set([x.count(",") for x in self.sections[section]]))
 
         if N == 1:  # looks correct
-            if len(self.sections["Data"]) == 1:
+            if len(self.sections[section]) == 1:
                 return {
-                    "name": "check_data_section_csv_format",
-                    "msg": "The [Data] section CSV format looks empty. Remove if of fill it.",
-                    "status": "Error",
+                    "name": name,
+                    "msg": f"The [{section}] section CSV format looks empty. Remove if of fill it.",
+                    "status": level,
                 }
             else:
                 return {
-                    "name": "check_data_section_csv_format",
-                    "msg": "The [Data] section CSV format looks correct.",
+                    "name": name,
+                    "msg": f"The [{section}] section CSV format looks correct.",
                     "status": "Success",
                 }
         elif N == 0:
             return {
-                "name": "check_data_section_csv_format",
-                "msg": "The [Data] section CSV format looks empty. Remove it of fill it",
-                "status": "Error",
+                "name": name,
+                "msg": f"The [{section}] section CSV format looks empty. Remove it of fill it",
+                "status": level,
             }
         else:
-            lengths = set([x.count(",") for x in self.sections["Data"]])
+            lengths = set([x.count(",") for x in self.sections[section]])
             return {
-                "name": "check_data_section_csv_format",
-                "msg": f"The [Data] section has lines with different number of entries {lengths}. Probably missing or commas in the [Data] section.",
-                "status": "Error",
+                "name": name,
+                "msg": f"The [{section}] section has lines with different number of entries {lengths}. Probably missing or extra commas in the [{section}] section.",
+                "status": level,
             }
+
+    def _check_data_section_csv_format(self):
+        return self._check_csv_format(self.data_section, "check_data_section_csv_format", level="Error")
 
     def _check_semi_column_presence(self):
         with open(self.filename, "r") as fp:
@@ -699,8 +729,13 @@ class SampleSheet:
 
     def _get_settings(self):
         data = {}
-        for line in self.sections["Settings"]:
-            key, value = line.split(",")
+        for line in self.sections[self.settings_section]:
+            # tolerate malformed / comma-less lines (e.g. Excel-mangled sheets
+            # that use ';' separators or trailing ';;;'). We do not crash here so
+            # that the meaningful error is reported by _check_semi_column_presence.
+            if "," not in line:
+                continue
+            key, value = line.split(",", 1)
             data[key] = value
         return data
 
@@ -776,48 +811,163 @@ class SampleSheet:
                     fout.write(line.strip("\n") + "\n")
 
 
-class BCLConvert:
-    """BCLconvert is a replacement for the bcl2fastq software
+class BCLConvert(SampleSheet):
+    """Reader and validator of Illumina v2 (BCL Convert) sample sheets.
 
-    The format are quite similar but there are differences as explained in the
-    official Illumina document.
+    BCL Convert is the replacement for the bcl2fastq software. The sample sheet
+    format (a.k.a. v2) is close to the bcl2fastq one (a.k.a. v1) handled by
+    :class:`SampleSheet` but differs in a few places:
 
-    https://support.illumina.com/sequencing/sequencing_software/bcl-convert/compatibility.html
-    https://knowledge.illumina.com/software/general/software-general-reference_material-list/000003710
+    - The tabular data lives in a ``[BCLConvert_Data]`` section (required) instead
+      of ``[Data]``.
+    - Settings live in a ``[BCLConvert_Settings]`` section (required). ``[Settings]``
+      may still appear but is optional.
+    - ``[Reads]`` uses cycle counts (``Read1Cycles``, ``Index1Cycles``, ...) rather
+      than one integer per line.
+    - The header carries ``FileFormatVersion,2``.
+    - ``Sample_ID`` is compulsory (error if absent) and at least one sample is
+      required. ``Sample_Name`` is ignored by BCL Convert (warning if present).
+    - Adapter trimming/masking options moved into the settings section, e.g.
+      ``Adapter`` became ``AdapterRead1`` and command-line options such as
+      ``--minimum-trimmed-read-length`` became ``MinimumTrimmedReadLength``.
+    - Barcode mismatches are set in the settings with ``BarcodeMismatchesIndex1``
+      and ``BarcodeMismatchesIndex2``.
 
-    Some differences with bcl2fastq
+    Because sections are parsed generically by :meth:`SampleSheet._scan_sections`,
+    most of the [Data] checks (mandatory columns, unique Sample_ID, unique/valid
+    indices, homogeneous index lengths, ...) are reused as-is by pointing
+    :attr:`data_section` and :attr:`settings_section` to the v2 sections.
 
-    - sample ID compulsary --> error if absent
-    - sample Name ignored --> warning if present
-    - fastq header. filter  is set to N and control bit to 0. missing instrument is not supported -->error
-    - V1 and V2 accepted.
-    - Note: At least one Sample_ID is required in the Data section of the Sample Sheet. --> error
-
-    for barcode-mismatch, this is now in the samplesheet with
-
-    BarcodeMismatchIndex1, #
-    BarcodeMismatchIndex2, #
-
-    for trmimming, masking:
-
-    Adapter  --> Changed to AdapterRead1
-    AdapterRead2 unchanged
-
-    Many options that were on command lines are now in the sample sheet
-    e.g. --minimum-trimmed-read-length is now MinimumTrimmedReadLength
-
-    Supports both [Settings] and [settings]. Neither are required.
-
-    Supports only [BCLConvert_Settings]. Required.
-
+    :references:
+        - https://support.illumina.com/sequencing/sequencing_software/bcl-convert/compatibility.html
+        - https://knowledge.illumina.com/software/general/software-general-reference_material-list/000003710
     """
 
-    def __init__(self):
-        pass
+    #: the tabular section is [BCLConvert_Data]; title-cased by the parser
+    data_section = "Bclconvert_Data"
 
-    # obsolet names are
-    # Adapter,TrimAdapter,MaskAdapter,MaskAdapterRead2,TrimAdapter,Read1StartFromCycle,Read1EndWithCycle,
-    # Read1UMIStartFromCycle,Read1UMILength,Read1StartFromCycle,,Read2UMIStartFromCycle,Read2UMILength,Read2StartFromCycle
+    #: the settings section is [BCLConvert_Settings]; title-cased by the parser
+    settings_section = "Bclconvert_Settings"
+
+    def checker(self):
+
+        from sequana.utils.checker import Checker
+
+        checks = Checker()
+
+        checks.tryme(self._check_file_format_version)
+
+        # [BCLConvert_Settings] is required in v2
+        if self.settings_section in self.sections:
+            checks.tryme(self._check_settings)
+        else:
+            checks.results.append({"msg": "The required [BCLConvert_Settings] section is missing", "status": "Error"})
+
+        # [BCLConvert_Data] is required in v2
+        if self.data_section in self.sections:
+            checks.tryme(self._check_data_section_csv_format)
+            checks.tryme(self._check_mandatory_data_columns)
+            checks.tryme(self._check_sample_ID)
+            checks.tryme(self._check_unique_sample_ID)
+            checks.tryme(self._check_unique_indices)
+            checks.tryme(self._check_nucleotide_indices)
+            checks.tryme(self._check_sample_lane_number)
+            checks.tryme(self._check_alpha_numerical)
+            checks.tryme(self._check_sample_name_ignored)
+
+            try:
+                if "index" in self.df.columns:
+                    checks.tryme(self._check_homogene_I7_length)
+                if "index2" in self.df.columns:
+                    checks.tryme(self._check_homogene_I5_length)
+                    checks.tryme(self._check_homogene_I5_and_I7_length)
+            except pd.errors.ParserError:  # pragma: no cover
+                pass
+        else:
+            checks.results.append({"msg": "The required [BCLConvert_Data] section is missing", "status": "Error"})
+
+        # [Cloud_Data] is optional BaseSpace metadata not used by BCL Convert demux,
+        # but a malformed row (e.g. missing comma) is still worth flagging (Warning).
+        if "Cloud_Data" in self.sections:
+            checks.tryme(self._check_cloud_data_section_csv_format)
+
+        checks.tryme(self._check_semi_column_presence)
+
+        return checks.results
+
+    def _check_file_format_version(self):
+        version = self.header.get("FileFormatVersion") if "Header" in self.sections else None
+        if version is None:
+            return {
+                "name": "check_file_format_version",
+                "msg": "FileFormatVersion not found in the [Header] section. Expected FileFormatVersion,2 for BCL Convert.",
+                "status": "Warning",
+            }
+        if str(version).strip() != "2":
+            return {
+                "name": "check_file_format_version",
+                "msg": f"Unexpected FileFormatVersion ({version}). BCL Convert expects FileFormatVersion,2.",
+                "status": "Error",
+            }
+        return {
+            "name": "check_file_format_version",
+            "msg": "FileFormatVersion is 2 (BCL Convert).",
+            "status": "Success",
+        }
+
+    def _check_cloud_data_section_csv_format(self):
+        return self._check_csv_format("Cloud_Data", "check_cloud_data_section_csv_format", level="Warning")
+
+    def _check_sample_name_ignored(self):
+        # Sample_Name is ignored by BCL Convert; warn if present to avoid confusion
+        if "sample_name" in self.df.columns:
+            return {
+                "name": "check_sample_name_ignored",
+                "msg": "Sample_Name column is present but is ignored by BCL Convert. Remove it to avoid confusion.",
+                "status": "Warning",
+            }
+        return {"name": "check_sample_name_ignored", "msg": "No ignored Sample_Name column.", "status": "Success"}
+
+    def quick_fix(self, output_filename):
+        """Fix a v2 sample sheet by removing trailing semicolons only.
+
+        Unlike :meth:`SampleSheet.quick_fix`, internal semicolons are preserved
+        because they are legitimate v2 separators (e.g. ``OverrideCycles`` uses
+        ``R1:Y151;I1:I10;I2:I10;R2:Y151``). Only trailing ``;`` (typical Excel
+        artefact) are stripped.
+        """
+        with open(self.filename) as fin, open(output_filename, "w") as fout:
+            for line in fin.readlines():
+                fout.write(line.rstrip().rstrip(";").rstrip() + "\n")
+
+    # obsolete v1 settings names (kept for reference):
+    # Adapter, TrimAdapter, MaskAdapter, MaskAdapterRead2, Read1StartFromCycle, Read1EndWithCycle,
+    # Read1UMIStartFromCycle, Read1UMILength, Read2UMIStartFromCycle, Read2UMILength, Read2StartFromCycle
+
+
+def get_sample_sheet_version(filename):
+    """Return ``"v2"`` for BCL Convert sample sheets, ``"v1"`` otherwise.
+
+    Detection relies on the v2 markers: presence of a ``[BCLConvert_Data]`` or
+    ``[BCLConvert_Settings]`` section, or ``FileFormatVersion,2`` in the header.
+    """
+    ss = SampleSheet(filename)
+    if BCLConvert.data_section in ss.sections or BCLConvert.settings_section in ss.sections:
+        return "v2"
+    try:
+        if str(ss.header.get("FileFormatVersion", "")).strip() == "2":
+            return "v2"
+    except Exception:  # pragma: no cover
+        pass
+    return "v1"
+
+
+def SampleSheetFactory(filename):
+    """Return a :class:`BCLConvert` or :class:`SampleSheet` instance based on the
+    detected sample sheet version (see :func:`get_sample_sheet_version`)."""
+    if get_sample_sheet_version(filename) == "v2":
+        return BCLConvert(filename)
+    return SampleSheet(filename)
 
 
 class IEM(SampleSheet):

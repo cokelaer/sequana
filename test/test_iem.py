@@ -1,6 +1,9 @@
 import glob
 
+from sequana.iem import BCLConvert
+from sequana.iem import SampleSheet
 from sequana.iem import SampleSheet as IEM
+from sequana.iem import SampleSheetFactory, get_sample_sheet_version
 
 from . import test_dir
 
@@ -86,3 +89,55 @@ def test_iem_samplesheets():
         for check in checks:
             if check["status"] == "Error":
                 assert False
+
+
+def test_bclconvert_v2():
+    filename = f"{test_dir}/data/iem/test_samplesheet_v2_bclconvert.csv"
+
+    # version detection and factory routing
+    assert get_sample_sheet_version(filename) == "v2"
+    ss = SampleSheetFactory(filename)
+    assert isinstance(ss, BCLConvert)
+
+    # v2 sections parsed and pointed to by the class attributes
+    assert ss.data_section in ss.sections
+    assert ss.settings_section in ss.sections
+    assert list(ss.df.columns) == ["sample_id", "index", "index2"]
+    assert "AdapterRead1" in ss.settings
+
+    # this example is valid: no error expected
+    ss.validate()
+    checks = ss.checker()
+    assert [c for c in checks if c["status"] == "Error"] == []
+
+
+def test_bclconvert_cloud_data_malformed():
+    # A missing comma in the optional [Cloud_Data] section must be flagged as a
+    # Warning (not Error): BCL Convert ignores that section for demux.
+    filename = f"{test_dir}/data/iem/test_samplesheet_v2_bclconvert_cloud_data_bad.csv"
+    ss = SampleSheetFactory(filename)
+    assert isinstance(ss, BCLConvert)
+
+    checks = ss.checker()
+
+    # the mandatory [BCLConvert_Data] section is still fine: no error
+    assert [c for c in checks if c["status"] == "Error"] == []
+
+    cloud = [c for c in checks if c.get("name") == "check_cloud_data_section_csv_format"]
+    assert len(cloud) == 1
+    assert cloud[0]["status"] == "Warning"
+
+
+def test_bclconvert_quick_fix_preserves_semicolons(tmpdir):
+    filename = f"{test_dir}/data/iem/test_samplesheet_v2_bclconvert.csv"
+    fout = tmpdir.join("fixed.csv")
+    BCLConvert(filename).quick_fix(str(fout))
+    text = fout.read()
+    # internal semicolons in OverrideCycles must survive quick_fix
+    assert "R1:Y151;I1:I10;I2:I10;R2:Y151" in text
+
+
+def test_get_sample_sheet_version_v1():
+    filename = f"{test_dir}/data/iem/good/test_expdesign_miseq_illumina_1.csv"
+    assert get_sample_sheet_version(filename) == "v1"
+    assert isinstance(SampleSheetFactory(filename), SampleSheet)
