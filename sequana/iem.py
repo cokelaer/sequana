@@ -526,7 +526,7 @@ class SampleSheet:
             invalid_rows = [x + 1 for x in invalid_rows]
             return {
                 "name": "check_nucleotide_indices",
-                "msg": f"these rows have invalid index with wrong nucleotides {invalid_rows}",
+                "msg": f"these rows have an index with invalid nucleotides {invalid_rows}",
                 "status": "Error",
             }
 
@@ -693,7 +693,7 @@ class SampleSheet:
             for i, x in enumerate(self.df[column].values):
                 status = str(x).replace("-", "").replace("_", "").isalnum()
                 if status is False:
-                    msg = f"type error: wrong {column} name in [Data] section (line {i+1}). Must be made of  alpha numerical characters, _, and - characters only. Found {x}"
+                    msg = f"type error: invalid {column} name in [Data] section (line {i+1}). Must be made of alphanumeric characters, _, and - only. Found {x}"
                     return {"msg": msg, "name": "check_alpha_numerical", "status": "Error"}
         return {
             "name": "check_alpha_numerical",
