@@ -1,6 +1,7 @@
 import os
 
 from easydev import TempFile
+from pylab import close as _plt_close
 
 from sequana import FastA
 from sequana.fasta import is_fasta
@@ -85,7 +86,25 @@ def test_format_contigs_denovo():
     contigs.lengths
     contigs.comments
     contigs.GC_content()
-    contigs.GC_content_sequence(contigs._fasta[contigs.names[0]])
+    import pytest
+
+    with pytest.warns(DeprecationWarning):
+        contigs.GC_content_sequence(contigs._fasta[contigs.names[0]])
+
+    gc = contigs.GC_content_per_sequence()
+    assert sorted(gc.keys()) == sorted(contigs.names)
+    assert all(0 <= v <= 100 for v in gc.values())
+
+    excluded = contigs.names[0]
+    gc2 = contigs.GC_content_per_sequence(exclude=[excluded])
+    assert excluded not in gc2
+    assert len(gc2) == len(gc) - 1
+
+    contigs.plot_GC_content()
+    contigs.plot_GC_content(kind="bar", max_contigs=1, sorting="alphanum", hline=False)
+    contigs.plot_GC_content(exclude=[excluded])
+    _plt_close("all")
+
     contigs.summary()
 
 

@@ -407,12 +407,94 @@ class FastA:
             )
 
     def GC_content_sequence(self, sequence):
-        """Return GC content in percentage of a sequence"""
-        from collections import Counter
+        """Return GC content in percentage of a sequence (N excluded from the total)
 
-        c = Counter(sequence.upper())
-        GC = c["G"] + c["C"]
-        return GC / len(sequence) * 100
+        .. deprecated::
+            Use :meth:`GC_content_per_sequence` instead.
+        """
+        import warnings
+
+        warnings.warn(
+            "GC_content_sequence is deprecated and will be removed in a future "
+            "release. Use GC_content_per_sequence instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        GC = sequence.count("G") + sequence.count("g") + sequence.count("C") + sequence.count("c")
+        AT = sequence.count("A") + sequence.count("a") + sequence.count("T") + sequence.count("t")
+        denom = GC + AT
+        return GC / denom * 100 if denom else 0
+
+    def GC_content_per_sequence(self, exclude=[]):
+        """Return a dictionary of GC content (in percent) for each contig/chromosome.
+
+        N (and any non-ACGT character) are excluded from the total so that the GC
+        content is computed as G+C over A+C+G+T only.
+
+        :param list exclude: list of contig/chromosome names to skip.
+        :returns: dict mapping each sequence name to its GC content in percentage.
+        """
+        exclude = set(exclude)
+        results = {}
+        for name in self.names:
+            if name in exclude:
+                continue
+            seq = self._fasta.fetch(name)
+            GC = seq.count("G") + seq.count("g") + seq.count("C") + seq.count("c")
+            AT = seq.count("A") + seq.count("a") + seq.count("T") + seq.count("t")
+            denom = GC + AT
+            results[name] = GC / denom * 100 if denom else 0
+        return results
+
+    def plot_GC_content(
+        self, sorting="mixed", max_contigs=50, kind="line", hline=True, rotation=90, hold=False, exclude=[]
+    ):
+        """Plot the GC content (in percent) per contig/chromosome.
+
+        The x-axis is the contig/chromosome name and the y-axis is the GC content.
+
+        :param str sorting: ``"mixed"`` (natural sort) or ``"alphanum"`` (lexicographic)
+            ordering of the names along the x-axis.
+        :param int max_contigs: keep only the ``max_contigs`` longest contigs to keep
+            the plot readable. Set to ``-1`` to plot all of them.
+        :param str kind: ``"line"`` or ``"bar"``.
+        :param bool hline: draw a horizontal dashed line at the genome-wide GC content.
+        :param int rotation: rotation of the x-axis tick labels.
+        :param bool hold: if False (default), clear the figure before plotting.
+        :param list exclude: list of contig/chromosome names to skip.
+        """
+        assert kind in ("line", "bar")
+
+        gc = self.GC_content_per_sequence(exclude=exclude)
+        exclude = set(exclude)
+        names = self.sorted_mixed_names if sorting == "mixed" else self.sorted_names
+        names = [n for n in names if n not in exclude]
+
+        if max_contigs != -1 and len(names) > max_contigs:
+            lengths = self.get_lengths_as_dict()
+            kept = set(sorted(names, key=lambda n: lengths[n], reverse=True)[:max_contigs])
+            names = [n for n in names if n in kept]
+            logger.warning(
+                f"Showing the {max_contigs} longest contigs out of {len(gc)}. " "Use max_contigs=-1 to show all."
+            )
+
+        values = [gc[n] for n in names]
+        x = range(len(names))
+
+        if not hold:
+            pylab.clf()
+        if kind == "bar":
+            pylab.bar(x, values)
+        else:
+            pylab.plot(x, values, "o-")
+        pylab.xticks(x, names, rotation=rotation)
+        pylab.ylabel("GC content (%)")
+        pylab.xlabel("Chromosome / contig")
+        if hline:
+            pylab.axhline(self.GC_content(), ls="--", color="r", label="genome GC")
+            pylab.legend()
+        pylab.grid(True)
+        pylab.tight_layout()
 
     def GC_content(self):
         """Return GC content in percentage of all sequences found in the FastA file"""

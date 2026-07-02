@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.23
+----
+
+* CHANGES:
+
+  * sample sheet (iem module): add Illumina v2 (BCL Convert) support. Sheets are
+    routed to a new ``BCLConvert`` class or the legacy ``SampleSheet`` via
+    ``SampleSheetFactory``/``get_sample_sheet_version``. The v2
+    ``[BCLConvert_Data]`` and ``[BCLConvert_Settings]`` sections are validated,
+    and malformed rows (e.g. a missing comma) in the optional ``[Cloud_Data]``
+    section are reported as a Warning.
+
 0.12.3
 ------
 

@@ -181,7 +181,8 @@ def summary(**kwargs):
                 g_count = seq.count("G") + seq.count("g")
                 t_count = seq.count("T") + seq.count("t")
                 n_count = seq.count("N") + seq.count("n")
-                gc = f.GC_content_sequence(seq)
+                gc_denom = a_count + c_count + g_count + t_count
+                gc = (g_count + c_count) / gc_denom * 100 if gc_denom else 0
 
                 contigs.append(
                     {

@@ -225,9 +225,9 @@ class TRF:  # pragma: no cover
 
     def to_bed(self, outfile, cmap="autumn"):
         import matplotlib.colors as colors
-        from matplotlib.cm import get_cmap
+        from matplotlib import colormaps
 
-        cmap = get_cmap(cmap)
+        cmap = colormaps[cmap]
         norm = colors.Normalize(vmin=0, vmax=self.df.length.median() * 2)
 
         with open(outfile, "w") as fout:

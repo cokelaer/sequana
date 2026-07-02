@@ -47,27 +47,55 @@ Regulatory / regulatory-adjacent
 Non-B DNA / motif detection
 ===========================
 
-.. automodule:: sequana.G4hunter
+.. automodule:: sequana.repeats.G4hunter
     :members:
     :undoc-members:
 
-.. automodule:: sequana.hdna
+.. automodule:: sequana.repeats.cruciforms
     :members:
     :undoc-members:
 
-.. automodule:: sequana.zdna
+.. automodule:: sequana.repeats.mirror
     :members:
     :undoc-members:
 
-.. automodule:: sequana.imotif
+.. automodule:: sequana.repeats.hdna
     :members:
     :undoc-members:
 
-.. automodule:: sequana.cruciforms
+.. automodule:: sequana.repeats.aphased
     :members:
     :undoc-members:
 
-.. automodule:: sequana.palindromes
+.. automodule:: sequana.repeats.tandem
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.repeats.zdna
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.repeats.gquad
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.repeats.directrepeat
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.repeats.shustring
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.repeats.palindromes
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.repeats.imotif
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.repeats.trf
     :members:
     :undoc-members:
 

@@ -1,6 +1,6 @@
 import pytest
 
-from sequana.palindromes import Palindromes
+from sequana.repeats.palindromes import Palindromes
 
 from . import test_dir
 
@@ -18,6 +18,7 @@ def test_palindromes_run(tmp_path):
 def test_palindromes_is_palindrome():
     p = Palindromes(fasta_file)
     assert p.is_palindrome("ATAT")  # AT paired with AT reverse complement
+    assert p.is_palindrome("atat")  # soft-masked (lower-case) must also match
     assert not p.is_palindrome("AAAA")
 
 

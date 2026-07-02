@@ -42,6 +42,26 @@ def test_constructor():
         VCF_freebayes("dummy")
 
 
+def test_empty_vcf(tmpdir):
+    # header only, no variant: must not raise StopIteration
+    v = VCF_freebayes(f"{sharedir}/empty.vcf")
+    assert len(v) == 0
+    assert v._snpeff is False
+    assert v.df.shape == (0, 0)
+
+    filter_dict = {
+        "freebayes_score": 20,
+        "frequency": 0.1,
+        "min_depth": 10,
+        "forward_depth": 3,
+        "reverse_depth": 3,
+        "strand_ratio": 0.2,
+        "keep_polymorphic": True,
+    }
+    filter_v = v.filter_vcf(filter_dict)
+    assert len(filter_v.variants) == 0
+
+
 def test_to_csv(tmpdir):
     path = tmpdir.mkdir("temp")
 

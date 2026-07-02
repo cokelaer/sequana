@@ -178,10 +178,6 @@ Wrappers to other tools
     :members:
     :undoc-members:
 
-.. automodule:: sequana.trf
-    :members:
-    :undoc-members:
-
 .. automodule:: sequana.codeml
     :members:
     :undoc-members:

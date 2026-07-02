@@ -1095,10 +1095,28 @@ class ConsensusBuilder:
 
         self.df = df.copy()
 
-    def _iupac(self, bases):
-        from sequana.iuapc import dna_ambiguities_r
+    def _iupac(self, bases, notation="iupac"):
+        """Encode a set of bases.
 
-        return dna_ambiguities_r.get(bases, "N")
+        :param bases: a list (e.g. ``['A', 'G']``) or a string of bases.
+        :param notation: ``iupac`` returns the single-character ambiguity code
+            (e.g. ``R`` for A/G); ``expanded`` returns the bases joined by a
+            slash (e.g. ``A/G``), following the original Cavener notation.
+        """
+        # Normalise to a sorted list so the result is order-independent.
+        bases = sorted(bases)
+
+        if notation == "expanded":
+            return "/".join(bases)
+        elif notation == "iupac":
+            from sequana.iuapc import dna_ambiguities_r
+
+            # The lookup dict keys are also normalised because some are not
+            # alphabetically sorted (e.g. 'GC' instead of 'CG').
+            lookup = {"".join(sorted(k)): v for k, v in dna_ambiguities_r.items()}
+            return lookup.get("".join(bases), "N")
+        else:
+            raise ValueError(f"Unknown notation: {notation}. Use 'iupac' or 'expanded'.")
 
     def _information_content(self, row):
         """Shannon information (DNA max = 2 bits)."""
@@ -1108,7 +1126,14 @@ class ConsensusBuilder:
         return 2 - H
 
     def get_consensus(
-        self, mode="majority", threshold=0.25, relative=0.8, strong=0.6, majority=0.5, info_threshold=1.0
+        self,
+        mode="majority",
+        threshold=0.25,
+        relative=0.8,
+        strong=0.6,
+        majority=0.5,
+        info_threshold=1.0,
+        notation="iupac",
     ):
         """
         Parameters
@@ -1123,6 +1148,9 @@ class ConsensusBuilder:
             uppercase if max >= strong
         info_threshold : float
             uppercase if information >= this value
+        notation : str
+            how to encode ambiguous positions: ``iupac`` (single ambiguity
+            code, e.g. ``R``) or ``expanded`` (slash-joined bases, e.g. ``A/G``)
         """
 
         consensus = []
@@ -1143,7 +1171,7 @@ class ConsensusBuilder:
 
             elif mode == "threshold":
                 bases = row[row >= threshold].index.tolist()
-                letter = self._iupac(bases)
+                letter = self._iupac(bases, notation=notation)
 
                 if row.max() >= strong:
                     consensus.append(letter.upper())
@@ -1153,7 +1181,7 @@ class ConsensusBuilder:
             elif mode == "relative":
                 m = row.max()
                 bases = row[row >= relative * m].index.tolist()
-                letter = self._iupac(bases)
+                letter = self._iupac(bases, notation=notation)
 
                 if m >= strong:
                     consensus.append(letter.upper())
@@ -1166,7 +1194,7 @@ class ConsensusBuilder:
 
                 # select dominant bases (relative strategy)
                 bases = row[row >= 0.8 * m].index.tolist()
-                letter = self._iupac(bases)
+                letter = self._iupac(bases, notation=notation)
 
                 if info >= info_threshold:
                     consensus.append(letter.upper())
@@ -1178,8 +1206,65 @@ class ConsensusBuilder:
 
         return "".join(consensus)
 
+    def get_consensus_cavener(self, notation="iupac"):
+        """Consensus following the Cavener (1987) rule.
+
+        For each position:
+
+        - if a single nucleotide exceeds 50% frequency **and** is more than
+          twice as frequent as the next one, it is reported as a capital
+          letter;
+        - otherwise, if the two most frequent nucleotides have a combined
+          frequency above 75%, a co-consensus is reported as the uppercase
+          encoding of that pair;
+        - otherwise the most frequent nucleotide is reported as a lowercase
+          letter.
+
+        :param notation: how to encode the co-consensus pair: ``iupac`` (single
+            ambiguity code, e.g. ``R``) or ``expanded`` (slash-joined bases,
+            e.g. ``A/G``, as in the original Cavener notation).
+
+        ::
+
+            >>> import pandas as pd
+            >>> from sequana.kozak import ConsensusBuilder
+            >>> df = pd.DataFrame({
+            ...     "A": [0.90, 0.45, 0.30, 0.55, 0.10],
+            ...     "C": [0.04, 0.40, 0.30, 0.20, 0.10],
+            ...     "G": [0.03, 0.10, 0.30, 0.15, 0.70],
+            ...     "T": [0.03, 0.05, 0.10, 0.10, 0.10],
+            ... })
+            >>> cb = ConsensusBuilder(df)
+            >>> cb.get_consensus_cavener()
+            'AMaAG'
+            >>> cb.get_consensus_cavener(notation="expanded")
+            'AA/CaAG'
+
+        Position 1 (A=0.90) is a capital because A exceeds 50% and is more than
+        twice the next base. Position 2 (A=0.45, C=0.40) is a co-consensus
+        (combined 0.85 > 75%). Position 3 (A=C=G=0.30) is lowercase. Position 5
+        (G=0.70) is a capital again.
+
+        Reference: Cavener DR (1987), Nucleic Acids Research 15(4):1353-1361.
+        """
+        consensus = []
+
+        for _, row in self.df.iterrows():
+            ranked = list(row.sort_values(ascending=False).items())
+            top_base, top = ranked[0]
+            second_base, second = ranked[1]
+
+            if top > 0.5 and top > 2 * second:
+                consensus.append(top_base.upper())
+            elif (top + second) > 0.75:
+                consensus.append(self._iupac([top_base, second_base], notation=notation).upper())
+            else:
+                consensus.append(top_base.lower())
+
+        return "".join(consensus)
+
     def all_consensus(
-        self, mode="majority", threshold=0.25, relative=0.8, strong=0.6, majority=0.5, info_threshold=1.0
+        self, threshold=0.25, relative=0.8, strong=0.6, majority=0.5, info_threshold=1.0, notation="iupac"
     ):
 
         for mode in ["majority", "threshold", "relative", "information", "max_only"]:
@@ -1190,9 +1275,11 @@ class ConsensusBuilder:
                 strong=strong,
                 majority=majority,
                 info_threshold=info_threshold,
+                notation=notation,
             )
-            res = res
             print(f"{mode}: {res}")
+
+        print(f"cavener: {self.get_consensus_cavener(notation=notation)}")
 
 
 class KozakAddon(Kozak):
@@ -1541,3 +1628,85 @@ def kozak_weight_score(sequence, weight_matrix=None, left_flank=10, right_flank=
     """
     scorer = KozakWeightScore(weight_matrix=weight_matrix, left_flank=left_flank, right_flank=right_flank)
     return scorer.score(sequence)
+
+
+def _iupac_match(observed, pattern):
+    """True when each observed IUPAC code is a subset of the pattern code.
+
+    Both ``observed`` and ``pattern`` are equal-length IUPAC strings. A
+    consensus base may itself be ambiguous (e.g. ``R``); it matches when the
+    set of bases it represents is contained in the pattern's set.
+    """
+    from sequana.iuapc import dna_ambiguities
+
+    sets = {code: set(expansion.strip("[]")) for code, expansion in dna_ambiguities.items()}
+    for obs, pat in zip(observed.upper(), pattern):
+        if obs not in sets or pat not in sets:
+            return False
+        if not sets[obs] <= sets[pat]:
+            return False
+    return True
+
+
+def classify_kozak_strength(motif, left=6):
+    """Classify a Kozak consensus motif as optimal, strong, adequate or weak.
+
+    The tiers follow Meijer and Thomas (2002), Biochem J,
+    doi:10.1042/bj20011706. The two key nucleotides are a purine
+    (``R`` = A/G) at the -3 position and a ``G`` at the +4 position (the base
+    just after the ATG codon). U is treated as T. The 6 upstream positions
+    (-6..-1) plus the +4 position are compared, the ATG codon being fixed:
+
+    - ``GCCRCC``-AUG-``G`` -> ``"optimal"`` (full optimal context, both key
+      nucleotides present);
+    - ``NNNRNN``-AUG-``G`` -> ``"strong"`` (both key nucleotides present);
+    - ``NNNRNN``-AUG-(A/C/U) or ``NNN(C/U)NN``-AUG-``G`` -> ``"adequate"``
+      (only one of the two key nucleotides present; termed ``"moderate"`` in
+      Hernandez et al. 2019, Cell);
+    - ``NNN(C/U)NN``-AUG-(A/C/U) -> ``"weak"`` (both key nucleotides absent).
+
+    :param str motif: a Kozak motif. The ATG start codon is located
+        automatically (first ``ATG`` substring); if absent, ``left`` is used
+        as the number of upstream positions and the motif is assumed to be the
+        6 upstream bases immediately followed by the +4 base (no ATG codon).
+    :param int left: number of upstream positions when no ATG is found.
+    :return: one of ``"optimal"``, ``"strong"``, ``"adequate"`` or ``"weak"``.
+
+    ::
+
+        >>> from sequana.kozak import classify_kozak_strength
+        >>> classify_kozak_strength("GCCRCCATGG")
+        'optimal'
+        >>> classify_kozak_strength("AAARAAATGG")
+        'strong'
+        >>> classify_kozak_strength("AAACAAATGG")
+        'adequate'
+        >>> classify_kozak_strength("AAACAAATGA")
+        'weak'
+    """
+    # work in DNA alphabet (U -> T) and upper case
+    motif = motif.upper().replace("U", "T")
+
+    idx = motif.find("ATG")
+    if idx >= 6:
+        upstream = motif[idx - 6 : idx]
+        plus4 = motif[idx + 3] if len(motif) > idx + 3 else ""
+    else:
+        # no ATG codon: motif is the upstream window followed by the +4 base
+        upstream = motif[:left][-6:]
+        plus4 = motif[left] if len(motif) > left else ""
+
+    if len(upstream) < 6 or not plus4:
+        raise ValueError("motif too short: need 6 upstream bases plus the +4 base")
+
+    # the two key nucleotides: purine (R) at -3 (upstream index 3) and G at +4
+    purine_m3 = _iupac_match(upstream[3], "R")
+    g_p4 = _iupac_match(plus4, "G")
+
+    if purine_m3 and g_p4:
+        # both key nucleotides present: optimal if the full GCCRCC context
+        # matches, otherwise strong
+        return "optimal" if _iupac_match(upstream, "GCCRCC") else "strong"
+    if purine_m3 or g_p4:
+        return "adequate"
+    return "weak"

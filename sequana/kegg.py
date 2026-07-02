@@ -37,13 +37,30 @@ class KEGGHelper:
         from bioservices import KEGG
 
         k = KEGG()
+
+        # k.organismIds queries https://rest.kegg.jp/list/organism, which may
+        # return an error (e.g. HTTP 400) and make bioservices raise instead of
+        # returning a list. Resolve it defensively so build_csv degrades with a
+        # clear message rather than an obscure AttributeError.
+        try:
+            organism_ids = k.organismIds
+        except Exception as err:  # noqa: BLE001
+            logger.error(f"Could not retrieve KEGG organism list: {err}")
+            return
+
         results = []
         definition = []
-        for i, item in enumerate(k.organismIds):
-            results.append(k.parse(k.get(f"gn:{item}"))["NAME"])
-            definition.append(k.parse(k.get(f"gn:{item}"))["ORG_CODE"])
-            print(i, Nmax)
-            if Nmax and i + 1 >= Nmax:
+        for item in organism_ids:
+            entry = k.get(f"gn:{item}")
+            # On a network/server hiccup, bioservices returns an
+            # HTTPResponseError (or status code) instead of a string. Skip it.
+            if not isinstance(entry, str):
+                logger.warning(f"Could not retrieve gn:{item} ({entry!r}); skipping")
+                continue
+            parsed = k.parse(entry)
+            results.append(parsed["NAME"])
+            definition.append(parsed["ORG_CODE"])
+            if Nmax and len(results) >= Nmax:
                 break
 
         results = [x[0] for x in results]

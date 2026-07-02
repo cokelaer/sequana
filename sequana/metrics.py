@@ -9,6 +9,8 @@ def lempel_ziv_complexity(seq):
 
     seq = seq.upper()
     n = len(seq)
+    if n == 0:
+        return 0.0
     i = 0
     complexity = 1
     dictionary = set()
