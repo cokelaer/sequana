@@ -264,9 +264,9 @@ class G4HunterReader:
 
     def to_bed(self, bedfile, cmap="seismic", threshold=0):
         import matplotlib.colors as colors
-        from matplotlib.cm import get_cmap
+        from matplotlib import colormaps
 
-        cmap = get_cmap(cmap)
+        cmap = colormaps[cmap]
         norm = colors.Normalize(vmin=-2, vmax=2)
 
         with open(bedfile, "w") as fout:

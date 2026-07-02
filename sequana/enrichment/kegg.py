@@ -581,12 +581,7 @@ class KEGGPathwayEnrichment:
         from matplotlib import colormaps
         from PIL import Image, ImageDraw, ImageFont
 
-        try:
-            cmap = colormaps["PuOr_r"]
-        except Exception:
-            from matplotlib.cm import get_cmap
-
-            cmap = get_cmap("PuOr_r")
+        cmap = colormaps["PuOr_r"]
 
         img_resp = requests.get(f"https://rest.kegg.jp/get/{pathway_id}/image")
         img_resp.raise_for_status()
