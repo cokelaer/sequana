@@ -289,11 +289,22 @@ def download_fasta_and_genbank(identifier, tag, genbank=True, fasta=True, outdir
         ENA (fasta)
     :param tag: name of the filename for the genbank and fasta files.
     """
+    try:  # pragma: no cover
+        # bioservices >=1.16 raises a typed error on HTTP failures (e.g. an
+        # unknown identifier returns a 400) whereas older versions returned the
+        # status code itself
+        from bioservices.core.errors import BioServicesError
+    except ImportError:  # pragma: no cover
+        BioServicesError = ()
+
     if genbank:
         from bioservices import EUtils
 
         eu = EUtils()
-        data = eu.EFetch(db="nuccore", id=identifier, rettype="gbwithparts", retmode="text")
+        try:
+            data = eu.EFetch(db="nuccore", id=identifier, rettype="gbwithparts", retmode="text")
+        except BioServicesError as err:
+            raise ValueError(f"{identifier} not found on NCBI ({err})")
         if isinstance(data, int) and data == 400:  # pragma: no cover
             raise ValueError(f"{identifier} not found on NCBI")
         else:
@@ -304,7 +315,10 @@ def download_fasta_and_genbank(identifier, tag, genbank=True, fasta=True, outdir
         from bioservices import ENA
 
         ena = ENA()
-        data = ena.get_data(identifier, "fasta")
+        try:
+            data = ena.get_data(identifier, "fasta")
+        except BioServicesError as err:
+            raise ValueError(f"{identifier} not found on ENA ({err})")
         if isinstance(data, int) and data == 400:  # pragma: no cover
             raise ValueError("{} not found on ENA".format(identifier))
         else:
