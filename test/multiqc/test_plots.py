@@ -12,6 +12,15 @@ def test_feature_count():
     fc.plot(html_code=True)
 
 
+def test_feature_count_assignment_plot_file():
+    # this multiqc file uses column names such as 'Unassigned: No Features' instead of
+    # 'Unassigned_NoFeatures' and has no multi-mapping column
+    fc = FeatureCounts(f"{test_dir}/data/featureCounts_assignment_plot.txt")
+    assert "Unassigned_NoFeatures" in fc.df.columns
+    fig = fc.plot(html_code=True)
+    assert len(fig.data) == 4
+
+
 def test_bowtie1():
     b = Bowtie1Reader(f"{test_dir}/data/multiqc_bowtie1.txt")
     b.plot_bar(html_code=True)
