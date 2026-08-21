@@ -19,6 +19,13 @@ import os
 
 import colorlog
 from bioservices import ENA, EUtils
+
+try:  # pragma: no cover
+    # bioservices >=1.16 raises a typed error on HTTP failures (e.g. an unknown
+    # accession returns a 400) whereas older versions returned the payload
+    from bioservices.core.errors import BioServicesError
+except ImportError:  # pragma: no cover
+    BioServicesError = ()
 from easydev import AttrDict, Progress, execute
 
 from sequana.lazy import pandas as pd
@@ -144,7 +151,11 @@ class ENADownload(object):
         logger.info("Fetching all fasta from ENA")
         for i, identifier in enumerate(self._identifiers):
             # download data from ENA
-            data = self.ena.get_data(identifier, "fasta")
+            try:
+                data = self.ena.get_data(identifier, "fasta")
+            except BioServicesError as err:
+                logger.warning(f"{identifier} could not be fetched from ENA ({err})")
+                continue
 
             # Split header and Fasta
             try:

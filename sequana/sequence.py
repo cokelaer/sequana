@@ -13,6 +13,8 @@ import re
 import string
 import subprocess
 from collections import Counter, deque
+from dataclasses import dataclass
+from typing import Callable, Optional
 
 import colorlog
 
@@ -20,11 +22,12 @@ from sequana.fasta import FastA
 from sequana.lazy import numpy as np
 from sequana.lazy import pandas as pd
 from sequana.lazy import pylab
+from sequana.metrics import compute_curvature, dinucleotide_roll, helix_twist
 
 logger = colorlog.getLogger(__name__)
 
 
-__all__ = ["DNA", "RNA", "Repeats", "Sequence"]
+__all__ = ["DNA", "RNA", "Repeats", "Sequence", "TrackSpec"]
 
 
 from sequana.iuapc import codons  # your existing dictionary
@@ -197,6 +200,31 @@ class Sequence(object):
         #    len(pattern)-1, pattern), 'ttt')]
 
 
+@dataclass
+class TrackSpec:
+    """Description of a track that :meth:`DNA.plot_tracks` can display.
+
+    :param getter: called as ``getter(dna, window)`` and returns the values to
+        plot (one value per position). *window* is the window requested by the
+        user, or :attr:`default_window` if none was requested.
+    :param ylabel: label of the Y axis.
+    :param title: title of the panel. The track name is used if empty.
+    :param color: matplotlib color.
+    :param default_window: window used when the user does not provide one. Use
+        None for tracks that do not depend on a window.
+    :param requires_window: if True, the track reads values precomputed by
+        :meth:`DNA._compute_skews` and therefore needs :attr:`DNA.window` to be
+        set beforehand.
+    """
+
+    getter: Callable
+    ylabel: str
+    title: str = ""
+    color: str = "b"
+    default_window: Optional[int] = None
+    requires_window: bool = False
+
+
 class DNA(Sequence):
     """Simple DNA class
 
@@ -214,6 +242,159 @@ class DNA(Sequence):
     found on plasmodb.org across the 14 chromosomes.
 
     """
+
+    #: Tracks known to :meth:`plot_tracks`, as a name to :class:`TrackSpec`
+    #: mapping. Add an entry to plot your own metric::
+    #:
+    #:     DNA.TRACKS["my_metric"] = TrackSpec(
+    #:         getter=lambda dna, window: my_function(dna.sequence),
+    #:         ylabel="my metric", color="m")
+    #:
+    #: Tracks with *requires_window* set need :attr:`window` to be set first.
+    TRACKS = {
+        # tracks precomputed by :meth:`_compute_skews` (require a window)
+        "GC_skew": TrackSpec(
+            getter=lambda dna, window: dna._GC_skew_slide[0],
+            ylabel="(G - C) / (G + C)",
+            title="GC skew",
+            color="b",
+            requires_window=True,
+        ),
+        "GC_skew_cumul": TrackSpec(
+            getter=lambda dna, window: np.cumsum(dna._GC_skew_slide[0]),
+            ylabel="(G - C) / (G + C)",
+            title="GC skew (cumulative sum)",
+            color="r",
+            requires_window=True,
+        ),
+        "AT_skew": TrackSpec(
+            getter=lambda dna, window: dna._AT_skew_slide[0],
+            ylabel="(A - T) / (A + T)",
+            title="AT skew",
+            color="b",
+            requires_window=True,
+        ),
+        "AT_skew_cumul": TrackSpec(
+            getter=lambda dna, window: np.cumsum(dna._AT_skew_slide[0]),
+            ylabel="(A - T) / (A + T)",
+            title="AT skew (cumulative sum)",
+            color="r",
+            requires_window=True,
+        ),
+        "RY_skew_cumul": TrackSpec(
+            getter=lambda dna, window: dna._Xn,
+            ylabel="(A + G) - (C + T)",
+            title="Cumulative RY skew (Purine - Pyrimidine)",
+            color="g",
+            requires_window=True,
+        ),
+        "MK_skew_cumul": TrackSpec(
+            getter=lambda dna, window: dna._Yn,
+            ylabel="(A + C) - (G + T)",
+            title="Cumulative MK skew (Amino - Keto)",
+            color="g",
+            requires_window=True,
+        ),
+        "H_bond_skew_cumul": TrackSpec(
+            getter=lambda dna, window: dna._Zn,
+            ylabel="(A + T) - (G + C)",
+            title="Cumulative H-bond skew (Weak H-bond - Strong H-bond)",
+            color="g",
+            requires_window=True,
+        ),
+        "GC_content": TrackSpec(
+            getter=lambda dna, window: dna._GC_content_slide[0],
+            ylabel="GC",
+            title="GC content",
+            color="k",
+            requires_window=True,
+        ),
+        "AT_content": TrackSpec(
+            getter=lambda dna, window: dna._AT_content_slide[0],
+            ylabel="AT",
+            title="AT content",
+            color="k",
+            requires_window=True,
+        ),
+        "karlin_content": TrackSpec(
+            getter=lambda dna, window: dna._karlin_content_slide[0],
+            ylabel="(A + G) - (C + T)",
+            title="Karlin content (excess of purines over pyrimidines)",
+            color="k",
+            requires_window=True,
+        ),
+        # tracks computed on the fly by the get_* methods
+        "entropy": TrackSpec(
+            getter=lambda dna, window: dna.get_entropy(window),
+            ylabel="entropy (bits)",
+            title="Shannon entropy",
+            color="k",
+            default_window=500,
+        ),
+        "informational_entropy": TrackSpec(
+            getter=lambda dna, window: dna.get_informational_entropy(window=window),
+            ylabel="entropy",
+            title="Informational entropy (triplets)",
+            color="k",
+            default_window=500,
+        ),
+        "flexibility": TrackSpec(
+            getter=lambda dna, window: dna.get_dna_flexibility(window=window),
+            ylabel="flexibility angle",
+            title="DNA flexibility",
+            color="k",
+            default_window=100,
+        ),
+        "karlin_signature_difference": TrackSpec(
+            getter=lambda dna, window: dna.get_karlin_signature_difference(window=window),
+            ylabel="difference",
+            title="Karlin signature difference",
+            color="k",
+            default_window=500,
+        ),
+        "dinucleotide_count": TrackSpec(
+            getter=lambda dna, window: dna.get_dinucleotide_count(window=window),
+            ylabel="count",
+            title="Dinucleotide count (AA, CC, GG, TT)",
+            color="k",
+            default_window=100,
+        ),
+        "trinucleotide_count": TrackSpec(
+            getter=lambda dna, window: dna.get_trinucleotide_count(window=window),
+            ylabel="count",
+            title="Trinucleotide count (AAA, CCC, GGG, TTT)",
+            color="k",
+            default_window=100,
+        ),
+        # window is in base-pair steps here, not in bases
+        "curvature": TrackSpec(
+            getter=lambda dna, window: dna.get_curvature(window=window),
+            ylabel="curvature (degrees)",
+            title="Intrinsic curvature",
+            color="m",
+            default_window=11,
+        ),
+        "twist": TrackSpec(
+            getter=lambda dna, window: dna.get_twist(),
+            ylabel="twist (degrees)",
+            title="Helix twist",
+            color="m",
+        ),
+    }
+
+    #: Tracks plotted by :meth:`plot_tracks` and :meth:`plot_all_skews` when no
+    #: track is requested.
+    DEFAULT_TRACKS = [
+        "GC_skew",
+        "GC_skew_cumul",
+        "AT_skew",
+        "AT_skew_cumul",
+        "RY_skew_cumul",
+        "MK_skew_cumul",
+        "H_bond_skew_cumul",
+        "GC_content",
+        "AT_content",
+    ]
 
     def __init__(
         self,
@@ -448,75 +629,107 @@ class DNA(Sequence):
         self._template_fft = template
         self._c_fft = c * 2.0 / N
 
-    def plot_all_skews(self, figsize=(10, 12), fontsize=16, alpha=0.5):
-        if self._window is None:  # pragma: no cover
-            raise AttributeError("Please set a valid window to compute skew")
+    @classmethod
+    def get_available_tracks(cls):
+        """Return the sorted names of the tracks known to :meth:`plot_tracks`"""
+        return sorted(cls.TRACKS.keys())
 
-        # create figure
-        fig, axarr = pylab.subplots(9, 1, sharex=True, figsize=figsize)
+    def plot_tracks(self, tracks=None, window=None, figsize=None, fontsize=16, alpha=0.5):
+        """Plot any combination of the metrics available in :attr:`TRACKS`.
 
-        main_title = (
-            "Window size = %d (%.0f %% of genome )\n\
+        One panel is created per track, all sharing the X axis (the position
+        along the sequence).
+
+        :param list tracks: names of the tracks to plot (see
+            :meth:`get_available_tracks`). A single name may be given as a
+            string. Defaults to :attr:`DEFAULT_TRACKS`, that is the skew and
+            content tracks.
+        :param int window: window used by all the tracks. Each track falls back
+            on its own default (:attr:`TrackSpec.default_window`) if not
+            provided. Note that the *curvature* window is expressed in
+            base-pair steps, not in bases. The skew tracks are precomputed, so
+            passing a window here is equivalent to setting :attr:`window`.
+        :param tuple figsize: defaults to a height that grows with the number
+            of tracks.
+        :param float fontsize: size of the main title.
+        :param float alpha: transparency of the curves.
+        :return: the matplotlib figure.
+
+        ::
+
+            from sequana.sequence import DNA
+            dna = DNA("data.fa")
+            dna.window = 1000
+            dna.plot_tracks()                                  # default tracks
+            dna.plot_tracks(["GC_skew", "curvature", "entropy"])
+            dna.plot_tracks(["GC_content", "entropy"], window=500)
+
+        """
+        if tracks is None:
+            tracks = self.DEFAULT_TRACKS
+        elif isinstance(tracks, str):
+            tracks = [tracks]
+
+        unknown = [name for name in tracks if name not in self.TRACKS]
+        if unknown:
+            raise ValueError(f"Unknown track(s) {unknown}. Use one of {self.get_available_tracks()}")
+
+        if not len(tracks):
+            raise ValueError("Please provide at least one track to plot")
+
+        specs = [self.TRACKS[name] for name in tracks]
+        need_skews = any(spec.requires_window for spec in specs)
+
+        # the skews are precomputed once for a given window; the other tracks
+        # get the window through their getter
+        if need_skews:
+            if window is not None and window != self._window:
+                self.window = window
+            if self._window is None:
+                raise AttributeError(
+                    "Please set a valid window to compute the skews (dna.window = N, or plot_tracks(window=N))"
+                )
+
+        if figsize is None:
+            figsize = (10, max(4, 1.3 * len(tracks) + 1.5))
+
+        fig, axarr = pylab.subplots(len(tracks), 1, sharex=True, figsize=figsize, squeeze=False)
+        axarr = axarr[:, 0]
+
+        if self._window is not None:
+            main_title = (
+                "Window size = %d (%.0f %% of genome )\n\
         GC content = %.0f %%, AT content = %.0f %%, ignored = %.0f %%"
-            % (
-                self._window,
-                self._window * 100 / self.__len__(),
-                self.gc_content() * 100,
-                (1 - self.gc_content()) * 100,
-                self._ignored_nuc * 100,
+                % (
+                    self._window,
+                    self._window * 100 / self.__len__(),
+                    self.gc_content() * 100,
+                    (1 - self.gc_content()) * 100,
+                    self._ignored_nuc * 100,
+                )
             )
-        )
+            pylab.suptitle(main_title, fontsize=fontsize)
 
-        pylab.suptitle(main_title, fontsize=fontsize)
+        for ax, name, spec in zip(axarr, tracks, specs):
+            data = spec.getter(self, spec.default_window if window is None else window)
+            ax.plot(list(data), "-", color=spec.color, alpha=alpha)
+            ax.set_title(spec.title or name)
+            ax.set_ylabel(spec.ylabel)
 
-        # GC skew
-        axarr[0].set_title("GC skew (blue) - Cumulative sum (red)")
-        axarr[0].plot(list(self._GC_skew_slide[0]), "b-", alpha=alpha)
-        axarr[0].set_ylabel("(G -C) / (G + C)")
-
-        axarr[1].plot(list(np.cumsum(self._GC_skew_slide[0])), "r-", alpha=alpha)
-        axarr[1].set_ylabel("(G -C) / (G + C)")
-
-        # AT skew
-        axarr[2].set_title("AT skew (blue) - Cumulative sum (red)")
-        axarr[2].plot(list(self._AT_skew_slide[0]), "b-", alpha=alpha)
-        axarr[2].set_ylabel("(A -T) / (A + T)")
-
-        axarr[3].plot(list(np.cumsum(self._AT_skew_slide[0])), "r-", alpha=alpha)
-        axarr[3].set_ylabel("(A -T) / (A + T)", rotation=0)
-
-        # Xn
-        axarr[4].set_title("Cumulative RY skew (Purine - Pyrimidine)")
-        axarr[4].plot(self._Xn, "g-", alpha=alpha)
-        axarr[4].set_ylabel("(A + G) - (C + T)")
-
-        # Yn
-        axarr[5].set_title("Cumulative MK skew (Amino - Keto)")
-        axarr[5].plot(self._Yn, "g-", alpha=alpha)
-        axarr[5].set_ylabel("(A + C) - (G + T)")
-
-        # Zn
-        axarr[6].set_title("Cumulative H-bond skew (Weak H-bond - Strong H-bond)")
-        axarr[6].plot(self._Zn, "g-", alpha=alpha)
-        axarr[6].set_ylabel("(A + T) - (G + C)")
-
-        # GC content
-        axarr[7].set_title("GC content")
-        axarr[7].plot(list(self._GC_content_slide[0]), "k-", alpha=alpha)
-        axarr[7].set_ylabel("GC")
-
-        # AT content
-        axarr[8].set_title("AT content")
-        axarr[8].plot(list(self._AT_content_slide[0]), "k-", alpha=alpha)
-        axarr[8].set_ylabel("AT")
-
-        # # FFT
-        # axarr[9].set_title("FFT")
-        # axarr[9].plot(list(self._c_fft),'g-',alpha=alpha)
-        # axarr[9].set_ylabel("FFT")
+        axarr[-1].set_xlabel("Position (bases)")
 
         fig.tight_layout()
-        fig.subplots_adjust(top=0.88)
+        if self._window is not None:
+            fig.subplots_adjust(top=0.88)
+        return fig
+
+    def plot_all_skews(self, figsize=(10, 12), fontsize=16, alpha=0.5):
+        """Plot the skew and content tracks.
+
+        Alias to :meth:`plot_tracks` called with :attr:`DEFAULT_TRACKS`. Use
+        :meth:`plot_tracks` to choose the tracks to display.
+        """
+        return self.plot_tracks(figsize=figsize, fontsize=fontsize, alpha=alpha)
 
     def _update_ORF_frame(self, i, nuc, j, frame, d_vars):
         d_vars["codon"][j] = d_vars["codon"][j] + nuc
@@ -800,6 +1013,62 @@ class DNA(Sequence):
             flex[N - i - 1] = flex[N - wby2 - 1]
 
         return flex / (window - 1)
+
+    def get_twist(self, bp_per_turn=10.5):
+        """Return the helical twist angle (degrees) of each base-pair step.
+
+        The twist is the rotation between two consecutive base pairs. Canonical
+        B-DNA is about 36 degrees per step but the actual value depends on the
+        dinucleotide (about 32 to 37 degrees), which matters for supercoiling,
+        nucleosome positioning and protein-DNA interactions. Values are the
+        averages stored in :data:`sequana.metrics.helix_twist`.
+
+        :param float bp_per_turn: helical repeat used for steps that contain a
+            letter outside ACGT (e.g. N); those fall back to 360 / bp_per_turn.
+        :return: array of length len(sequence) - 1. Entry i is the step between
+            positions i and i+1.
+
+        ::
+
+            from sequana.sequence import DNA
+            twist = DNA("ACGTACGT").get_twist()
+
+        """
+        seq = self.sequence.upper()
+        default = 360.0 / bp_per_turn
+        return np.array([helix_twist.get(seq[i : i + 2], default) for i in range(len(seq) - 1)])
+
+    def get_curvature(self, window=11, use_twist=True, bp_per_turn=10.5):
+        """Return the local intrinsic (static) curvature of the helix axis.
+
+        Each base-pair step bends the axis by its Roll angle (taken from
+        :data:`sequana.metrics.dinucleotide_roll`) in a direction that rotates
+        with the accumulated twist. Bends repeated in phase with the helical
+        repeat (about 10.5 bases, as in A-tracts) add up and give the classic
+        intrinsically-curved DNA signature, while out-of-phase bends cancel out.
+        The curvature of a step is the norm of the vector sum of the bends
+        inside the window centred on that step. See
+        :func:`sequana.metrics.compute_curvature` for the model and references.
+
+        :param int window: window length in steps; 11 is about one helical turn.
+        :param bool use_twist: use the sequence-dependent twist from
+            :meth:`get_twist` for the phasing. If False, a constant canonical
+            twist of 360 / bp_per_turn is used.
+        :param float bp_per_turn: helical repeat used for the canonical twist.
+        :return: array of length len(sequence) - 1 in degrees accumulated over
+            the window. Steps closer than window//2 to either end are set to NaN.
+            Steps with a letter outside ACGT contribute no bend.
+
+        ::
+
+            from sequana.sequence import DNA
+            curvature = DNA("data.fa").get_curvature(window=11)
+
+        """
+        seq = self.sequence.upper()
+        roll = [dinucleotide_roll.get(seq[i : i + 2], 0) for i in range(len(seq) - 1)]
+        twist = self.get_twist(bp_per_turn=bp_per_turn) if use_twist else None
+        return compute_curvature(roll, twist=twist, window=window, bp_per_turn=bp_per_turn)
 
     def get_entropy(self, window):
         step = 1

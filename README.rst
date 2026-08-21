@@ -255,6 +255,17 @@ Changelog :memo:
 ========= ==========================================================================
 Version   Description
 ========= ==========================================================================
+0.24.0    * NEW: ``minor_groove_width`` module predicting the DNA minor groove
+            width with the DNAshape pentamer model
+          * NEW: ``metrics`` gains ``compute_curvature`` (intrinsic curvature of
+            the helix axis, roll-vector model) and ``compute_sidd``
+            (stress-induced duplex destabilization profile)
+          * UPDATE: ``DNA.plot_tracks`` replaces the hardcoded ``plot_all_skews``
+            panels. Any combination of tracks can be plotted now.
+          * UPDATE: somy module computes IGE/IAL metrics (genome expansion and
+            aneuploidy level per isolate), also saved by ``sequana somy_score``
+          * Fix multiqc featureCounts parsing (column names differ between
+            multiqc versions and input files)
 0.23.0    * NEW: repeats sub package with non B-DNA modules. we also moved repeat-
             related modules in it (e.g. repeats.py)
           * UPDATE: kozak module with cavener rule and ConsensusBuilder

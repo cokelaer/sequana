@@ -10,6 +10,8 @@
 #  Documentation: http://sequana.readthedocs.io
 #  Contributors:  https://github.com/sequana/sequana/graphs/contributors
 ##############################################################################
+import re
+
 import pandas as pd
 
 
@@ -110,8 +112,16 @@ class Bowtie2(Reader):
             else:
                 mate_one_col = None
 
-            mate_multi_col = "paired_aligned_mate_multi_halved" if "paired_aligned_mate_multi_halved" in self.df.columns else "paired_aligned_mate_multi"
-            mate_none_col = "paired_aligned_mate_none_halved" if "paired_aligned_mate_none_halved" in self.df.columns else "paired_aligned_mate_none"
+            mate_multi_col = (
+                "paired_aligned_mate_multi_halved"
+                if "paired_aligned_mate_multi_halved" in self.df.columns
+                else "paired_aligned_mate_multi"
+            )
+            mate_none_col = (
+                "paired_aligned_mate_none_halved"
+                if "paired_aligned_mate_none_halved" in self.df.columns
+                else "paired_aligned_mate_none"
+            )
 
             all_columns = [
                 "paired_aligned_one",
@@ -237,6 +247,24 @@ class FeatureCounts(Reader):
     def __init__(self, filename):
         super().__init__(filename)
 
+    #: names found in multiqc_featurecounts.txt. The plot files (e.g.
+    #: featureCounts_assignment_plot.txt) use variants such as 'Unassigned: No Features'
+    _columns = [
+        "Assigned",
+        "Unassigned_Unmapped",
+        "Unassigned_MultiMapping",
+        "Unassigned_NoFeatures",
+        "Unassigned_Ambiguity",
+    ]
+
+    def reader(self):
+        super().reader()
+        # depending on the multiqc version and on the input file, the columns are named
+        # e.g. 'Unassigned_NoFeatures' or 'Unassigned: No Features'. We normalise the
+        # names so that any of those files can be used.
+        aliases = {re.sub("[^a-z0-9]", "", x.lower()): x for x in self._columns}
+        self.df.columns = [aliases.get(re.sub("[^a-z0-9]", "", x.lower()), x) for x in self.df.columns]
+
     def plot(self, html_code=False):
         import plotly.graph_objects as go
 
@@ -253,13 +281,11 @@ class FeatureCounts(Reader):
         # where one or the other is stored. in version >0.17.2 ze use multiqc_featurecounts.txt
         # where both are provided...so no way to distingiush them. We wil plot the two entries.
 
-        columns = [
-            "Assigned",
-            "Unassigned_Unmapped",
-            "Unassigned_MultiMapping",
-            "Unassigned_NoFeatures",
-            "Unassigned_Ambiguity",
-        ]
+        # depending on the input file, some columns may be missing
+        columns = [x for x in self._columns if x in self.df.columns]
+        if not columns:
+            raise ValueError(f"No feature counts assignment column found in {self.filename}")
+
         S = self.df[columns].sum(axis=1).values
 
         df = self.df[columns].divide(S, axis=0) * 100

@@ -142,3 +142,34 @@ def test_plot_sliding_window_boxplot_too_large():
     data = pd.Series([1.0, 2.0, 3.0])
     with pytest.raises(ValueError, match="Window size too large"):
         plot_sliding_window_boxplot(data, window_size=100, step=1000, overlap_percentage=50)
+
+
+def test_compute_ige_ial(tmpdir):
+    ss = SomyScore(filename=None)
+    ss.somies = pd.DataFrame(
+        {
+            "chrom": ["chr1", "chr2", "chr1", "chr2"],
+            "tag": ["A", "A", "B", "B"],
+            "estimated_somies": [2, 2, 3, 4],
+            "measured_somies": [2.0, 2.0, 3.0, 5.0],
+        }
+    )
+    outfile = tmpdir.join("ige_ial.csv")
+    metrics = ss.compute_ige_ial(str(outfile))
+    assert outfile.exists()
+    assert sorted(metrics["isolate"]) == ["A", "B"]
+    # isolate A has a constant somy: IGE = 2 and no variability
+    A = metrics.set_index("isolate").loc["A"]
+    assert A["IGE"] == pytest.approx(2)
+    assert A["IAL"] == pytest.approx(0)
+    # isolate B is more expanded and more aneuploid
+    B = metrics.set_index("isolate").loc["B"]
+    assert B["IGE"] == pytest.approx(4)
+    assert B["IAL"] == pytest.approx(np.std([3.0, 5.0], ddof=1))
+    # sorted by decreasing IGE
+    assert list(metrics["isolate"]) == ["B", "A"]
+
+
+def test_compute_ige_ial_not_computed(tmpdir):
+    ss = SomyScore(filename=None)
+    assert ss.compute_ige_ial(str(tmpdir.join("ige_ial.csv"))) is None
