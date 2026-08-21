@@ -564,9 +564,9 @@ class SomyScore:
         results = []
         for isolate in self.somies["tag"].unique():
             subset = self.somies[self.somies["tag"] == isolate]
-            somies_vals = subset["measured_somies"].values
-            ige = np.mean(somies_vals)
-            ial = np.std(somies_vals, ddof=1)  # sample std
+            somies_vals = subset["measured_somies"].to_numpy(dtype=float)
+            ige = float(np.mean(somies_vals))
+            ial = float(np.std(somies_vals, ddof=1)) if len(somies_vals) > 1 else 0.0
             results.append({"isolate": isolate, "IGE": ige, "IAL": ial})
 
         metrics_df = pd.DataFrame(results).sort_values("IGE", ascending=False)

@@ -283,14 +283,69 @@ dl.class > dt, dl.function > dt, dl.method > dt, dl.attribute > dt {
   padding-left: 16%;
 }
 
-.sidebar {
-  width: 15%;
-  padding: 10px;
-  background-color: #b3d1ff;
-  border: 2px solid #000;
-  float: left;
-  padding-left: 20px;
-  position: fixed;
-  overflow-y: auto;
+/* -------------------------------------------------------------- the sidebar */
+html {
+  scroll-behavior: smooth;
 }
-*/
+
+.sidebar {
+  position: fixed;
+  width: 15%;
+  max-height: calc(100vh - 14em);
+  overflow-y: auto;
+  padding: 12px 0;
+  font-size: 90%;
+  background-color: #f7f9fc;
+  border: 1px solid #d6dee8;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+}
+
+.sidebar h3 {
+  margin: 0 0 8px 0;
+  padding: 0 14px 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #6b7a8d;
+  border-bottom: 1px solid #e3e9f0;
+}
+
+.sidebar nav a {
+  display: block;
+  padding: 6px 14px;
+  color: #24405e;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+}
+
+.sidebar nav a:hover {
+  background-color: #e8eff8;
+  color: #10233b;
+  text-decoration: none;
+}
+
+/* section currently being read */
+.sidebar nav a.active {
+  background-color: #dce8f7;
+  border-left-color: #2a6ebb;
+  color: #10233b;
+  font-weight: 600;
+}
+
+/* on a narrow screen, the sidebar becomes a plain table of contents on top */
+@media (max-width: 900px) {
+  .main-content {
+    display: block;
+    float: none;
+  }
+  .sidebar {
+    position: static;
+    width: auto;
+    max-height: none;
+  }
+  .content {
+    padding-left: 20px;
+  }
+}

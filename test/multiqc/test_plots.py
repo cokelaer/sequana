@@ -34,6 +34,29 @@ def test_bowtie2():
     b.plot(html_code=True)
 
 
+def test_bowtie2_plot_files():
+    # multiqc also exports the data of the plots themselves. Those files use the
+    # legend names (e.g. 'SE mapped uniquely') rather than the keys found in
+    # multiqc_bowtie2.txt. Both must be understood.
+    b = Bowtie2(f"{test_dir}/data/mqc_bowtie2_se_plot_1.txt")
+    fig = b.plot(html_code=True)
+    assert len(fig.data) == 3
+    # all bars must sum up to 100%
+    assert abs(sum(trace.x[0] for trace in fig.data) - 100) < 1e-6
+
+    b = Bowtie2(f"{test_dir}/data/mqc_bowtie2_pe_plot_1.txt")
+    fig = b.plot(html_code=True)
+    assert len(fig.data) == 6
+    assert abs(sum(trace.x[0] for trace in fig.data) - 100) < 1e-6
+
+
+def test_bowtie2_no_alignment_column():
+    import pytest
+
+    with pytest.raises(ValueError):
+        Bowtie2(f"{test_dir}/data/multiqc_star.txt").plot(html_code=True)
+
+
 def test_star():
     b = STAR(f"{test_dir}/data/multiqc_star.txt")
     b.plot(html_code=True)
