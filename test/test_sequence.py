@@ -1,8 +1,10 @@
 import shutil
 
+import numpy as np
+import pylab
 import pytest
 
-from sequana.sequence import DNA, RNA, Repeats, Sequence
+from sequana.sequence import DNA, RNA, Repeats, Sequence, TrackSpec
 
 from . import test_dir
 
@@ -128,6 +130,62 @@ def test_gc_skew():
         pass
 
 
+def test_dna_plot_tracks():
+    dna = DNA(datafile)
+    dna.window = 100
+
+    # default tracks are the skew/content ones
+    fig = dna.plot_tracks()
+    assert len(fig.axes) == len(DNA.DEFAULT_TRACKS)
+
+    # a single track may be given as a string
+    assert len(dna.plot_tracks("GC_skew").axes) == 1
+
+    # tracks from both families (precomputed skews and get_* methods)
+    assert len(dna.plot_tracks(["GC_skew", "curvature", "entropy"]).axes) == 3
+
+    # every registered track must be plottable
+    for name in DNA.get_available_tracks():
+        assert len(dna.plot_tracks(name).axes) == 1
+        pylab.close("all")
+
+
+def test_dna_plot_tracks_window():
+    dna = DNA(datafile)
+
+    # a window is required by the skew tracks only
+    with pytest.raises(AttributeError):
+        dna.plot_tracks("GC_skew")
+    dna.plot_tracks("entropy", window=500)
+
+    # passing a window is equivalent to setting the window attribute
+    dna.plot_tracks("GC_skew", window=200)
+    assert dna.window == 200
+
+
+def test_dna_plot_tracks_unknown():
+    dna = DNA(datafile)
+    dna.window = 100
+    with pytest.raises(ValueError):
+        dna.plot_tracks(["GC_skew", "dummy"])
+    with pytest.raises(ValueError):
+        dna.plot_tracks([])
+
+
+def test_dna_plot_tracks_user_defined():
+    dna = DNA("ACGTACGTACGTACGT")
+    try:
+        DNA.TRACKS["dummy"] = TrackSpec(
+            getter=lambda dna, window: np.arange(len(dna.sequence)),
+            ylabel="dummy",
+            color="m",
+        )
+        assert "dummy" in DNA.get_available_tracks()
+        assert len(dna.plot_tracks("dummy").axes) == 1
+    finally:
+        del DNA.TRACKS["dummy"]
+
+
 def test_sequence_get_statistics():
     s = Sequence("AACGGTT")
     stats = s.get_statistics()
@@ -158,6 +216,36 @@ def test_dna_get_dna_flexibility():
     flex = dna.get_dna_flexibility(window=4)
     assert len(flex) == len(seq)
     assert all(f > 0 for f in flex)
+
+
+def test_dna_get_twist():
+    dna = DNA("ACGTACGT")
+    twist = dna.get_twist()
+    assert len(twist) == 7
+    assert twist[0] == 34.5  # AC
+    assert twist[1] == 30.0  # CG
+    # unknown letters fall back to the canonical twist
+    assert all(x == pytest.approx(360 / 10.5) for x in DNA("NNNN").get_twist())
+
+
+def test_dna_get_curvature():
+    seq = "ACGTACGTACGTACGTACGTACGT"
+    curvature = DNA(seq).get_curvature(window=11)
+    assert len(curvature) == len(seq) - 1
+    # window//2 steps on each side are undefined
+    assert all(np.isnan(curvature[:5]))
+    assert all(np.isnan(curvature[-5:]))
+    assert all(v >= 0 for v in curvature[5:-5])
+
+
+def test_dna_get_curvature_phasing():
+    # bends repeated at the helical repeat add up; at half a turn they cancel
+    phased = DNA(("AAAAAA" + "CCCCC") * 20).get_curvature(window=11)
+    antiphased = DNA(("AAA" + "CC") * 44).get_curvature(window=11)
+    assert np.nanmean(phased) > 5 * np.nanmean(antiphased)
+
+    # a constant roll rotating along the helix cancels out over one turn
+    assert np.nanmax(DNA("A" * 100).get_curvature(window=11)) < 1
 
 
 def test_dna_get_entropy():
