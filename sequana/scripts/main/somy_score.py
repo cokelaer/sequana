@@ -189,6 +189,11 @@ def somy_score(**kwargs):
             ytick_fontsize=kwargs["ytick_fontsize"],
         )
     ss.somies.to_csv("somies.csv")
+
+    # Compute and save IGE/IAL metrics
+    ige_ial = ss.compute_ige_ial("ige_ial_metrics.csv")
+    logger.info("IGE/IAL metrics saved to ige_ial_metrics.csv")
+
     from pylab import savefig
 
     savefig("sequana_somy.png", dpi=300)

@@ -545,6 +545,40 @@ class SomyScore:
             ylim([0, Ymax])
             xlim([-0.5, Nchrom - 0.5])
 
+    def compute_ige_ial(self, output_filename="ige_ial_metrics.csv"):
+        """Compute Isolate Genome Expansion (IGE) and Isolate Aneuploidy Level (IAL).
+
+        IGE = mean somy across all chromosomes per isolate (genome expansion)
+        IAL = std somy across all chromosomes per isolate (aneuploidy variability)
+
+        Requires that somies DataFrame exists (after boxplot() call).
+
+        Parameters:
+            output_filename (str): path to save IGE/IAL CSV
+        """
+        if not hasattr(self, "somies") or self.somies is None:
+            logger.warning("somies not computed yet. Call boxplot() first.")
+            return None
+
+        # Group by tag (isolate) and compute IGE/IAL
+        results = []
+        for isolate in self.somies["tag"].unique():
+            subset = self.somies[self.somies["tag"] == isolate]
+            somies_vals = subset["measured_somies"].values
+            ige = np.mean(somies_vals)
+            ial = np.std(somies_vals, ddof=1)  # sample std
+            results.append({"isolate": isolate, "IGE": ige, "IAL": ial})
+
+        metrics_df = pd.DataFrame(results).sort_values("IGE", ascending=False)
+        metrics_df.to_csv(output_filename, index=False)
+        logger.info(f"Saved IGE/IAL metrics to {output_filename}")
+
+        # Print summary
+        print(f"IGE range: {metrics_df['IGE'].min():.3f} - {metrics_df['IGE'].max():.3f}")
+        print(f"IAL range: {metrics_df['IAL'].min():.3f} - {metrics_df['IAL'].max():.3f}")
+
+        return metrics_df
+
 
 def plot_sliding_window_boxplot(data, window_size, step=1000, overlap_percentage=50, facecolor="lightblue"):
     """
