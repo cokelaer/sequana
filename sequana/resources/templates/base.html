@@ -49,9 +49,6 @@
       {% if config.pipeline_version %}
         and <a href="https://github.com/sequana/{{ config.pipeline_name}}">sequana_{{ config.pipeline_name  }}</a> (v{{config.pipeline_version}})
       {% endif %}
-      {% if config.sequana_wrappers %}
-        and <a href="https://github.com/sequana/sequana-wrappers">sequana-wrappers</a> ({{config.sequana_wrappers}})
-      {% endif %}
       </h2>
     </header>
 
@@ -59,12 +56,14 @@
     <div class="main-content">
      <!-- Sidebar area -->
     <aside class="sidebar">
-        <h3>Sidebar</h3>
+        <h3>Contents</h3>
+        <nav>
         {%- for section in module.sections %}
           {%- if section["name"] %}
-            <a href="#{{ section["anchor"] }}">{{ section["name"] }}</a><br>
+          <a href="#{{ section["anchor"] }}">{{ section["name"] }}</a>
          {%- endif %}
         {%- endfor %}
+        </nav>
     </aside>
     </div>
     <div class="content">
@@ -94,5 +93,30 @@ Generated with Sequana ({{ config.time_now }})</p>
  
     </div>
   </footer>
+
+  <script>
+    // highlight the section being read in the sidebar
+    (function () {
+      var links = Array.prototype.slice.call(document.querySelectorAll(".sidebar nav a"));
+      if (!links.length) { return; }
+      var targets = links.map(function (link) {
+        return document.getElementById(link.getAttribute("href").slice(1));
+      });
+      function update() {
+        var current = 0;
+        for (var i = 0; i < targets.length; i++) {
+          if (targets[i] && targets[i].getBoundingClientRect().top <= 120) { current = i; }
+        }
+        // the last sections may be too short to ever reach the top of the page
+        if (window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 2) {
+          current = links.length - 1;
+        }
+        links.forEach(function (link, i) { link.classList.toggle("active", i === current); });
+      }
+      window.addEventListener("scroll", update, { passive: true });
+      window.addEventListener("resize", update);
+      update();
+    })();
+  </script>
 </body>
 </html>

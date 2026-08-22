@@ -255,6 +255,12 @@ Changelog :memo:
 ========= ==========================================================================
 Version   Description
 ========= ==========================================================================
+0.24.1    * Fix bowtie2 plots being empty when built from the multiqc plot data
+            files (mqc_bowtie2_{se,pe}_plot_1.txt), whose columns are named after
+            the plot legend. Missing columns now raise instead of drawing an
+            empty figure.
+          * Restyle the sidebar of the HTML reports: card layout, hover and
+            active section highlighting, responsive below 900px.
 0.24.0    * NEW: ``minor_groove_width`` module predicting the DNA minor groove
             width with the DNAshape pentamer model
           * NEW: ``metrics`` gains ``compute_curvature`` (intrinsic curvature of

@@ -60,26 +60,60 @@ class Bowtie2(Reader):
     def __init__(self, filename):
         super().__init__(filename)
 
+    #: the mqc_bowtie2_{se,pe}_plot_1.txt files exported by multiqc use the human
+    #: readable names of the plot legend. We map them back to the keys found in
+    #: multiqc_bowtie2.txt so that any of those files can be used.
+    _aliases = {
+        "SE mapped uniquely": "unpaired_aligned_one",
+        "SE multimapped": "unpaired_aligned_multi",
+        "SE not aligned": "unpaired_aligned_none",
+        "PE mapped uniquely": "paired_aligned_one",
+        "PE mapped discordantly uniquely": "paired_aligned_discord_one",
+        "PE one mate mapped uniquely": "paired_aligned_mate_one_halved",
+        "PE multimapped": "paired_aligned_multi",
+        "PE discordantly multimapped": "paired_aligned_discord_multi",
+        "PE one mate multimapped": "paired_aligned_mate_multi_halved",
+        "PE neither mate aligned": "paired_aligned_mate_none_halved",
+    }
+
+    def reader(self):
+        super().reader()
+        self.df.columns = [self._aliases.get(x, x) for x in self.df.columns]
+
     def plot(self, html_code=False):
         import plotly.graph_objects as go
 
         fig = go.Figure()
 
         # get percentage instead of counts
-        if "unpaired_aligned_multi" in self.df:
+        if any(
+            col in self.df.columns
+            for col in ("unpaired_aligned_one", "unpaired_aligned_multi", "unpaired_aligned_none")
+        ):
             # version <=0.17.2 we used the mqc_bowtie output
             # in version >0.17.2  we use multiqc_bowtie2.txt
             # self.df[["SE mapped uniquely", "SE multimapped", "SE not aligned"]].sum(axis=1).values
             # then printed in this order: SE mapped uniquely, SE multimapped, SE not aligned
 
-            columns = [
+            all_columns = [
                 "unpaired_aligned_one",
                 "unpaired_aligned_multi",
                 "unpaired_aligned_none",
             ]
-            names = ["Mapped", "Multi mapped", "Unmapped"]
+            all_names = ["Mapped", "Multi mapped", "Unmapped"]
 
-            colors = ["#17478f", "#e2780d", "#9f1416"]
+            all_colors = ["#17478f", "#e2780d", "#9f1416"]
+
+            # some columns may be missing depending on the multiqc version/input file
+            columns, names, colors = [], [], []
+            for col, name, color in zip(all_columns, all_names, all_colors):
+                if col in self.df.columns:
+                    columns.append(col)
+                    names.append(name)
+                    colors.append(color)
+
+            if not columns:
+                raise ValueError(f"No bowtie2 alignment column found in {self.filename}")
 
             S = self.df[columns].sum(axis=1).values
             df = self.df[columns].divide(S, axis=0) * 100
@@ -128,6 +162,7 @@ class Bowtie2(Reader):
                 "paired_aligned_discord_one",
                 mate_one_col,
                 "paired_aligned_multi",
+                "paired_aligned_discord_multi",
                 mate_multi_col,
                 mate_none_col,
             ]
@@ -136,10 +171,11 @@ class Bowtie2(Reader):
                 "Discordant unique mapping",
                 "One mate mapped uniquely",
                 "Multi mapped paired",
+                "Discordant multi mapping",
                 "One mate multi-mapped",
                 "Unaligned",
             ]
-            all_colors = ["#20568f", "#5c94ca", "#95ceff", "#f7a35c", "#ffeb75", "#981919"]
+            all_colors = ["#20568f", "#5c94ca", "#95ceff", "#f7a35c", "#dce333", "#ffeb75", "#981919"]
 
             # Filter to only columns that exist in the dataframe
             columns, names, colors = [], [], []
@@ -148,6 +184,9 @@ class Bowtie2(Reader):
                     columns.append(col)
                     names.append(name)
                     colors.append(color)
+
+            if not columns:
+                raise ValueError(f"No bowtie2 alignment column found in {self.filename}")
 
             S = self.df[columns].sum(axis=1).values
             df = self.df[columns].divide(S, axis=0) * 100

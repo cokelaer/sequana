@@ -47,7 +47,10 @@ class SummaryBase(SequanaBaseModule):
         l, c = self.create_hide_section("Dep", "collapse/expand", content, hide=True)
         self.sections.append(
             {
-                "name": "Dependencies {0}".format(self.add_float_right("<small>{0}</small>".format(l))),
+                "name": "Dependencies",
+                # the link must not be part of the name: the sidebar would then
+                # nest this <a> inside the section link, which is invalid HTML
+                "title_links": "<small>{0}</small>".format(l),
                 "anchor": "dependencies",
                 "content": c,
             }
@@ -236,7 +239,10 @@ class SequanaReport(SummaryBase):
         l, c = self.create_hide_section("Dep", "collapse/expand", content, hide=True)
         self.sections.append(
             {
-                "name": "Dependencies {0}".format(self.add_float_right("<small>{0}</small>".format(l))),
+                "name": "Dependencies",
+                # the link must not be part of the name: the sidebar would then
+                # nest this <a> inside the section link, which is invalid HTML
+                "title_links": "<small>{0}</small>".format(l),
                 "anchor": "dependencies",
                 "content": c,
             }
