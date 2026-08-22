@@ -304,7 +304,7 @@ def download_fasta_and_genbank(identifier, tag, genbank=True, fasta=True, outdir
         try:
             data = eu.EFetch(db="nuccore", id=identifier, rettype="gbwithparts", retmode="text")
         except BioServicesError as err:
-            raise ValueError(f"{identifier} not found on NCBI ({err})")
+            raise ValueError(f"{identifier} not found on NCBI ({err})") from err
         if isinstance(data, int) and data == 400:  # pragma: no cover
             raise ValueError(f"{identifier} not found on NCBI")
         else:
@@ -318,7 +318,7 @@ def download_fasta_and_genbank(identifier, tag, genbank=True, fasta=True, outdir
         try:
             data = ena.get_data(identifier, "fasta")
         except BioServicesError as err:
-            raise ValueError(f"{identifier} not found on ENA ({err})")
+            raise ValueError(f"{identifier} not found on ENA ({err})") from err
         if isinstance(data, int) and data == 400:  # pragma: no cover
             raise ValueError("{} not found on ENA".format(identifier))
         else:

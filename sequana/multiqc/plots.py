@@ -86,7 +86,10 @@ class Bowtie2(Reader):
         fig = go.Figure()
 
         # get percentage instead of counts
-        if "unpaired_aligned_multi" in self.df:
+        if any(
+            col in self.df.columns
+            for col in ("unpaired_aligned_one", "unpaired_aligned_multi", "unpaired_aligned_none")
+        ):
             # version <=0.17.2 we used the mqc_bowtie output
             # in version >0.17.2  we use multiqc_bowtie2.txt
             # self.df[["SE mapped uniquely", "SE multimapped", "SE not aligned"]].sum(axis=1).values
@@ -108,6 +111,9 @@ class Bowtie2(Reader):
                     columns.append(col)
                     names.append(name)
                     colors.append(color)
+
+            if not columns:
+                raise ValueError(f"No bowtie2 alignment column found in {self.filename}")
 
             S = self.df[columns].sum(axis=1).values
             df = self.df[columns].divide(S, axis=0) * 100

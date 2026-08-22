@@ -15,7 +15,9 @@
   <div id="{{ section["anchor"] }}" style="clear:both">
     {%- if section["name"] %}
       <h2>{{ section["name"] }}
-        <div style="float:right">{{ section["title_links"] }}</div>
+        {%- if section["title_links"] %}
+        <span style="float:right">{{ section["title_links"] }}</span>
+        {%- endif %}
       </h2>
     {%- endif %}
     {{ section["content"] }}

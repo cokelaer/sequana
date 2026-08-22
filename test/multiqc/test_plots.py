@@ -41,13 +41,15 @@ def test_bowtie2_plot_files():
     b = Bowtie2(f"{test_dir}/data/mqc_bowtie2_se_plot_1.txt")
     fig = b.plot(html_code=True)
     assert len(fig.data) == 3
-    # all bars must sum up to 100%
-    assert abs(sum(trace.x[0] for trace in fig.data) - 100) < 1e-6
+    # all bars must sum up to 100%, for every sample
+    for i in range(len(fig.data[0].x)):
+        assert abs(sum(trace.x[i] for trace in fig.data) - 100) < 1e-6
 
     b = Bowtie2(f"{test_dir}/data/mqc_bowtie2_pe_plot_1.txt")
     fig = b.plot(html_code=True)
     assert len(fig.data) == 6
-    assert abs(sum(trace.x[0] for trace in fig.data) - 100) < 1e-6
+    for i in range(len(fig.data[0].x)):
+        assert abs(sum(trace.x[i] for trace in fig.data) - 100) < 1e-6
 
 
 def test_bowtie2_no_alignment_column():
