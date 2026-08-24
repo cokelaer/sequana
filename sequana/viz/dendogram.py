@@ -204,9 +204,12 @@ class Dendogram(Linkage):
 
         if self.category:
             gca = pylab.gca()
-            X, Y = gca.get_position().get_points()
+            pos = gca.get_position()
             f = pylab.gcf()
-            ax = f.add_axes([X[0], X[1], 0.02, Y[1] - X[1]])
+            # orientation="right" puts leaves (and their y-tick labels) at the
+            # LEFT edge (pos.x0), root at the right - so the side-color bar
+            # must sit just left of pos.x0, not on top of it.
+            ax = f.add_axes([pos.x0 - 0.03, pos.y0, 0.02, pos.y1 - pos.y0])
 
             category = [self.category[x] for x in self.df.index]
             dr = np.array(category, dtype=int)
