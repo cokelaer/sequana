@@ -138,8 +138,10 @@ class PCA(clusterisation.Cluster):
             # If scale data used a scaler, then we need to use it for the transformation
             Xr = pca.transform(self.scaler.fit_transform(self.df.loc[tokeep].T))
         else:
-            # otherwise, noting to do
-            Xr = pca.transform(self.df.loc[tokeep].T)
+            # use the same transformed data the PCA was fit on - using the raw
+            # self.df here would project untransformed counts onto components
+            # fit on transformed data, giving points on the wrong (raw-count) scale
+            Xr = pca.transform(data.T)
         self.Xr = Xr
 
         if switch_x:
