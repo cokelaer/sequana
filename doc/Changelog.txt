@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.24.1
+0.24.2
 ------
 
 * IMPROVEMENTS:
@@ -35,6 +35,13 @@ Changelog
   * New visualization: UpSetPlot (sequana/viz/upsetplot/)
     - Vendored library for set intersection visualization
     - Integration with venn_js.py for Venn diagram support
+
+0.24.1
+------
+
+* IMPROVEMENTS:
+
+  * Documentation improvements (preliminary version)
 
 0.23
 ----
