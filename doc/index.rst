@@ -145,6 +145,7 @@ Not sure where to start? This table helps:
     pipeline_user_guide
     pipelines
     tutorial
+    tutorial_phylo
     case_examples
     faqs
 
