@@ -1,6 +1,31 @@
 Changelog
 =========
 
+0.24.1
+------
+
+* IMPROVEMENTS:
+
+  * Documentation: comprehensive audit and fixes (30 issues resolved):
+    - All documented CLI commands corrected (taxonomy, coverage, mapping, summary flags)
+    - Deprecated --use-apptainer replaced with --apptainer-prefix across docs
+    - Pipeline user guide: added --execute, --profile, corrected SLURM setup instructions
+    - Library user guide: expanded with FASTA, GFF3, VCF, Kraken, featurecounts recipes
+    - CLI reference: added task→command quick lookup table
+    - Index: added 5-minute quickstart and entry-point decision table
+    - Case examples: retired broken example, point to tutorial instead
+    - Typos and syntax errors corrected (5 items)
+
+  * New module: Protein 3D structures (PDB)
+    - Parse and analyze PDB files with Structure/Model/Chain/Residue/Atom hierarchy
+    - Compute RMSD and superpose structures for alignment
+    - Extract sequences and 3D coordinates from PDB files
+    - Documented in userguide.rst and references_genomics.rst
+
+  * Added library FAQ section: imports, headless plotting, large file handling
+  * Tutorial sections now include Time/Data/Requires metadata
+  * Pipeline catalogue expanded: added 7 missing pipelines (annotation, slicer, chipseq, cutandtag, hic, meme, nanocap)
+
 0.23
 ----
 
