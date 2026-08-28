@@ -30,18 +30,20 @@ Load a tree from Newick format::
 
 Access nodes and compute distances::
 
-    # All leaf nodes
-    leaves = tree.get_leaves()
-    for leaf in leaves:
-        print(f"  {leaf.name}: branch length {leaf.branch_length}")
+    # All leaf taxa
+    leaves = tree.leaves()
+    for leaf_name in leaves:
+        node = tree.find_node(leaf_name)
+        if node:
+            print(f"  {leaf_name}: branch length {node.branch_length}")
 
     # Distance between two taxa
     dist_a_b = tree.distance("A", "B")
     print(f"Distance A-B: {dist_a_b:.2f}")
 
-    # Distance from node to root
-    dist_to_root = tree.distance_to_root(leaves[0])
-    print(f"Distance to root: {dist_to_root:.2f}")
+    # Distance from leaf to root
+    depth = tree.depth_at_leaf(leaves[0])
+    print(f"Distance to root: {depth:.2f}")
 
 Re-root tree and get subtrees::
 
@@ -72,7 +74,7 @@ Access sequences and compute properties::
     # Get individual sequences
     for name in aln.names:
         seq = aln.sequences[name]
-        gc_content = seq.count("G") + seq.count("C") / len(seq)
+        gc_content = (seq.count("G") + seq.count("C")) / len(seq)
         print(f"  {name}: GC = {gc_content:.1%}")
 
     # Consensus sequence (most common residue per position)

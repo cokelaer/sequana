@@ -260,12 +260,6 @@ Version   Description
             Nexus, FASTA); consensus sequences and alignment statistics
           * NEW: UpSetPlot visualization library for set intersections
           * NEW: Protein 3D structure analysis (pdb.py)
-          * Documentation audit: 30 issues fixed
-            - Corrected all CLI flags (taxonomy, coverage, mapping, summary)
-            - Replaced deprecated --use-apptainer with --apptainer-prefix
-            - Expanded library user guide with FASTA, GFF3, VCF, Kraken recipes
-            - Added 5-minute quickstart and CLI task→command lookup table
-            - New comprehensive phylogenetic tools tutorial
           * Pipeline catalogue expanded with 7 new pipelines
 0.24.1    * Fix bowtie2 plots being empty when built from the multiqc plot data
             files (mqc_bowtie2_{se,pe}_plot_1.txt), whose columns are named after
