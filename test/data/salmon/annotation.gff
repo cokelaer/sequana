@@ -1,0 +1,16 @@
+##gff-version 3
+1	ensembl	gene	100	2000	.	+	.	ID=gene:GENE1;Name=Gene1;biotype=protein_coding;gene_id=GENE1
+1	ensembl	mRNA	100	2000	.	+	.	ID=transcript:TR1;Parent=gene:GENE1;Name=Gene1-201;transcript_id=TR1
+1	ensembl	exon	100	500	.	+	.	ID=exon:TR1-1;Parent=transcript:TR1;transcript_id=TR1
+1	ensembl	CDS	100	500	.	+	.	ID=CDS:PROT1;Parent=transcript:TR1;transcript_id=TR1
+1	ensembl	mRNA	100	1500	.	+	.	ID=transcript:TR2;Parent=gene:GENE1;Name=Gene1-202;transcript_id=TR2
+1	ensembl	exon	100	400	.	+	.	ID=exon:TR2-1;Parent=transcript:TR2;transcript_id=TR2
+1	ensembl	biological_region	1	99	.	+	.	logic_name=eponine
+2	ensembl	ncRNA_gene	500	3000	.	-	.	ID=gene:GENE2;Name=Gene2;biotype=lncRNA;gene_id=GENE2
+2	ensembl	lnc_RNA	500	3000	.	-	.	ID=transcript:TR3;Parent=gene:GENE2;Name=Gene2-201;transcript_id=TR3
+2	ensembl	exon	500	1000	.	-	.	ID=exon:TR3-1;Parent=transcript:TR3;transcript_id=TR3
+3	ensembl	pseudogene	10	900	.	+	.	ID=gene:GENE3;Name=Gene3;biotype=pseudogene;gene_id=GENE3
+3	ensembl	pseudogenic_transcript	10	900	.	+	.	ID=transcript:TR4;Parent=gene:GENE3;Name=Gene3-201;transcript_id=TR4
+3	ensembl	exon	10	400	.	+	.	ID=exon:TR4-1;Parent=transcript:TR4;transcript_id=TR4
+4	ensembl	gene	50	1200	.	-	.	ID=gene:GENE4;Name=Gene4;biotype=protein_coding;gene_id=GENE4
+4	ensembl	mRNA	50	1200	.	-	.	ID=transcript:TR5;Parent=gene:GENE4;Name=Gene4-201;transcript_id=TR5
