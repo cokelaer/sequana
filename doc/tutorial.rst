@@ -32,13 +32,15 @@ e.g. for bash::
 fastqc pipeline
 ---------------
 
+**Time:** ~5 min | **Data size:** 100 MB | **Requires:** damona-activated bioinformatics tools
+
 We will run the
 `sequana_fastqc <https://github.com/sequana/fastqc>`_ pipeline on a pair of
 FastQ files. The data is a Measles virus sequencing run (HiSeq, PCRFree
 adapters, ~10% adapter content, index ``GTGAAA``). For testing, download:
 
 - :download:`R1 <../sequana/resources/data/Hm2_GTGAAA_L005_R1_001.fastq.gz>`
-- :download:`R2 <../sequana/resources/data/Hm2_GTGAAA_L005_R2_001.fastq.gz>`)
+- :download:`R2 <../sequana/resources/data/Hm2_GTGAAA_L005_R2_001.fastq.gz>`
 
 (1500 reads each.) Then::
 
@@ -52,6 +54,8 @@ Open ``summary.html`` in your browser.
 
 Taxonomy (standalone)
 ---------------------
+
+**Time:** ~10 min | **Data size:** 1000 reads | **Requires:** kraken2, krona
 
 Quick taxonomy classification of a FastQ file uses ``sequana_taxonomy``
 (see :ref:`standalone_sequana_taxonomy`).
@@ -82,6 +86,8 @@ available `here <_static/krona.html>`_.
 
 Variant calling pipeline
 ------------------------
+
+**Time:** ~15 min | **Data size:** 100 MB | **Requires:** bwa, samtools, freebayes, snpEff
 
 The variant calling pipeline performs mapping, calling and annotation
 (snpEff + coverage). See :ref:`pipeline_vc` for full details.
@@ -126,6 +132,8 @@ The reference and annotation paths are set when initiating the pipeline. Open
 De-novo assembly
 ----------------
 
+**Time:** ~20 min | **Data size:** 50-200 MB | **Requires:** khmer, spades
+
 ::
 
     pip install sequana_denovo --upgrade
@@ -138,6 +146,8 @@ Edit ``denovo_test/config.yaml`` before running. The
 
 RNA-seq
 -------
+
+**Time:** ~30 min | **Data size:** 200 MB | **Requires:** bowtie2, featurecounts, DESeq2
 
 Full reference: :ref:`pipeline_rnaseq`. Quick recipe (single-end yeast data,
 HiSeq2500)::
