@@ -26,6 +26,16 @@ Changelog
   * Tutorial sections now include Time/Data/Requires metadata
   * Pipeline catalogue expanded: added 7 missing pipelines (annotation, slicer, chipseq, cutandtag, hic, meme, nanocap)
 
+  * New modules: Phylogenetic analysis
+    - phylo.py: Parse and manipulate Newick trees (load, reroot, subtrees, distances)
+    - alignment.py: Multiple sequence alignment parsing (PHYLIP, Stockholm, Nexus, FASTA)
+    - Consensus sequences and alignment statistics
+    - Comprehensive tutorial with working examples (tutorial_phylo.rst)
+
+  * New visualization: UpSetPlot (sequana/viz/upsetplot/)
+    - Vendored library for set intersection visualization
+    - Integration with venn_js.py for Venn diagram support
+
 0.23
 ----
 
