@@ -156,6 +156,40 @@ Count reads per feature (gene, exon, etc.) with :class:`~sequana.featurecounts.F
 For differential expression, see :mod:`sequana.rnadiff` (wraps DESeq2) and
 :mod:`sequana.enrichment` for KEGG/GSEA enrichment analysis.
 
+Protein structures (PDB)
+========================
+
+Parse and analyze 3D protein structures from PDB files with
+:mod:`sequana.pdb`::
+
+    from sequana.pdb import parse_pdb
+    structure = parse_pdb("protein.pdb")
+
+    # Iterate over chains and residues
+    for chain in structure.models[0].chains:
+        seq = chain.sequence()  # Get amino acid sequence
+        print(f"Chain {chain.chain_id}: {len(chain.residues)} residues")
+
+    # Access atoms and coordinates
+    for residue in chain.residues:
+        ca = residue.get_atom("CA")  # Alpha carbon
+        if ca:
+            print(f"{residue.name}{residue.seq}: {ca.coordinates()}")
+
+Compute RMSD and align structures::
+
+    from sequana.pdb import parse_pdb, rmsd, superpose
+
+    pdb1 = parse_pdb("structure1.pdb")
+    pdb2 = parse_pdb("structure2.pdb")
+
+    # Calculate RMSD
+    distance = rmsd(pdb1.models[0].chains[0], pdb2.models[0].chains[0])
+    print(f"RMSD: {distance:.2f} Å")
+
+    # Superpose and align structures
+    superposed = superpose(pdb1.models[0].chains[0], pdb2.models[0].chains[0])
+
 
 Where to look next
 ==================
