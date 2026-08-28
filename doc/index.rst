@@ -99,12 +99,16 @@ Not sure where to start? This table helps:
    <div class="col span_1_of_3">
         <h3><a href="installation.html">Installation</a></h3>
         <p>pip install sequana</p>
-        <h3><a href="auto_examples/index.html">Examples</a></h3>
-        <p>Visit our example gallery to use the Python library</p>
-        <h3><a href="pipelines.html">NGS pipelines</a></h3>
-        <p>Browse the Snakemake pipelines</p>
-        <h3><a href="applications.html">Standalone applications</a></h3>
-        <p>The sequana CLI and its sub-commands</p>
+        <h3><a href="userguide.html">Library User Guide</a></h3>
+        <p>Use Sequana from Python to read, analyze, and visualize genomic data</p>
+        <h3><a href="tutorial.html">Tutorial</a></h3>
+        <p>Step-by-step guides for common workflows and pipelines</p>
+        <h3><a href="auto_examples/index.html">Code Examples</a></h3>
+        <p>Runnable Python examples from the gallery</p>
+        <h3><a href="pipelines.html">NGS Pipelines</a></h3>
+        <p>Browse the Snakemake pipelines catalogue</p>
+        <h3><a href="cli_reference.html">CLI Reference</a></h3>
+        <p>The sequana command-line tools (30+ sub-commands)</p>
     </div>
     <div class="col span_2_of_3">
     <div class="jcarousel-wrapper">
