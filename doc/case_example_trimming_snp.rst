@@ -48,7 +48,7 @@ Then go to the project and execute the pipeline::
 .. note:: you can also use Sequanix to help in the configuration design.
 
 
-The final cleaned reads are in trimming/Tohama-R0_S4_L001/report/outputs (refered
+The final cleaned reads are in trimming/Tohama-R0_S4_L001/report/outputs (referred
 to <DIR2> hereafter)
 and named after the project: (`trimming_R1_.cutadapt.fastq.gz` and
 `trimming_R2_.cutadapt.fastq.gz`). These two files should be used later as
@@ -173,7 +173,7 @@ trimming)  309  were found. The additional SNPs all have low coverage below 20.
 A third of them have low balance strand.
 
 There is one SNP found in the trim case not found in no_trim. However, it is
-marginal with strand balance of 0.12, depth of 11, frequence of 0.73 and one of the lowest score
+marginal with strand balance of 0.12, depth of 11, frequency of 0.73 and one of the lowest score
 
 
 
@@ -181,12 +181,12 @@ Conclusions
 --------------
 
 The detection of SNPs does not suffer from not trimming low quality bases.
-Actually, some new SNPs are found. However, the are usually not significant
+Actually, some new SNPs are found. However, they are usually not significant
 (low depth, low score or unbalanced). Interestingly, the distribution of the
 SNPs in the depth vs strand balance plane seems to be more centered on strand
 balance=0.5. We also notice that the depth is 10% better which means that the
-low quality bases have contributed to the improvments of the depth and freebayes
-sorfes. It could be interesting to extend the analysis to more data, lower
+low quality bases have contributed to the improvements of the depth and freebayes
+scores. It could be interesting to extend the analysis to more data, lower
 quality, or higher quality threshold. Note also that because there are more low
 quality bases, there much more false alarms; However setting a freebayes score
 threshold around 5 removes most of them.

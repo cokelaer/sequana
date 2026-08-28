@@ -33,6 +33,23 @@ catalogue.
 or via its pipelines and standalones (end users). To join the project, please
 let us know on `github <https://github.com/sequana/sequana/issues/306>`__.
 
+Quick start
+===========
+
+Install Sequana and run a quality-control pipeline in 2 minutes::
+
+    pip install sequana_fastqc
+    sequana_fastqc --input-directory . --execute
+
+Or use the Python library to read and analyze genomic data::
+
+    from sequana import FastA, SequanaCoverage
+    fasta = FastA("genome.fasta")
+    cov = SequanaCoverage("coverage.bed")
+    cov[0].plot_coverage()
+
+Full guides below.
+
 Choosing your entry point
 ==========================
 

@@ -43,14 +43,15 @@ Input data
 Expected file naming convention
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Most pipelines expect gzipped FastQ files following the pattern::
+Most pipelines expect gzipped FastQ files following the Illumina naming
+convention::
 
-    PREFIX_R1_.fastq.gz
-    PREFIX_R2_.fastq.gz
+    SAMPLE_S1_L001_R1_001.fastq.gz
+    SAMPLE_S1_L001_R2_001.fastq.gz
 
-The ``_R1_`` / ``_R2_`` tag identifies paired files; ``PREFIX`` becomes the
-sample name. The ``input_readtag`` parameter in the pipeline config accepts
-custom patterns such as ``_R[12]``.
+The ``_R1_`` / ``_R2_`` tag identifies paired files. The ``input_readtag``
+parameter in the pipeline config accepts custom patterns such as ``_R[12]_``
+or ``_R1\.`` if your files don't follow the Illumina naming scheme.
 
 
 Pipeline runs
