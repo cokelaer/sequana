@@ -124,3 +124,14 @@ Protein structures (3D)
 .. automodule:: sequana.pdb
     :members:
     :undoc-members:
+
+Phylogenetic analysis
+=====================
+
+.. automodule:: sequana.phylo
+    :members:
+    :undoc-members:
+
+.. automodule:: sequana.alignment
+    :members:
+    :undoc-members:
