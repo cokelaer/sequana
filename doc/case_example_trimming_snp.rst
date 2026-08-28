@@ -99,7 +99,7 @@ has the correct reference. See the :ref:`tutorial` section (variant section).
         fout.write(data.decode())
     from bioservices import ENA
     ena = ENA()
-    data = ena.get_data(reference', 'fasta')
+    data = ena.get_data(reference, 'fasta')
     with open("data.fa", "w") as fout:
         fout.write(data.decode())
     from sequana import snpeff
@@ -161,8 +161,7 @@ value around 0.5 The y-axis shows the read depth.
         c=list(df2.freebayes_score.values/1240))
     grid()
     ylim([0,90])
-    title("Trimming quality (left) vs no trimming (right)
-    \n")
+    title("Trimming quality (left) vs no trimming (right)\n")
 
 
 .. image:: _static/case_examples/trim_vs_notrim_on_snp.png
@@ -181,7 +180,7 @@ marginal with strand balance of 0.12, depth of 11, frequence of 0.73 and one of 
 Conclusions
 --------------
 
-The detection of SNPs does not suffer from not trimming low quality bases. 
+The detection of SNPs does not suffer from not trimming low quality bases.
 Actually, some new SNPs are found. However, the are usually not significant
 (low depth, low score or unbalanced). Interestingly, the distribution of the
 SNPs in the depth vs strand balance plane seems to be more centered on strand
@@ -191,9 +190,3 @@ sorfes. It could be interesting to extend the analysis to more data, lower
 quality, or higher quality threshold. Note also that because there are more low
 quality bases, there much more false alarms; However setting a freebayes score
 threshold around 5 removes most of them.
-
-
-
-
-
-

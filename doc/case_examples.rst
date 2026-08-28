@@ -3,11 +3,10 @@
 Case examples
 =============
 
-End-to-end walkthroughs combining several Sequana pipelines/standalones on
-real data. These are heavier than the per-pipeline tutorials in
-:ref:`tutorial`.
+Real-world end-to-end walkthroughs combining Sequana pipelines. For now, see
+:ref:`tutorial` for step-by-step guides on common workflows:
 
-.. toctree::
-   :maxdepth: 1
+- :ref:`tutorial` — Quality control (fastqc), taxonomy classification, variant
+  calling, RNA-seq, and de-novo assembly recipes.
 
-   case_example_trimming_snp
+More case examples coming soon.

@@ -53,14 +53,15 @@ Every Sequana pipeline understands these options (with sensible defaults):
     Glob to select files. Default: ``*fastq.gz``. Use ``*/*fastq.gz`` if
     samples sit in sub-directories.
 ``--input-readtag``
-    Pattern used to detect paired-end reads. Default: ``_R[12]_``.
+    Pattern used to detect paired-end reads. Default: ``_R[12]_``. Not all pipelines
+    support this option; check ``sequana_<name> --help`` for pipeline-specific flags.
 ``--working-directory``
     Where the pipeline files get copied. Use ``--force`` to overwrite.
-``--run-mode {local,slurm}``
+``--profile {local,slurm}``
     Run locally or generate a SLURM-aware launcher. Auto-detected when
     ``sbatch`` is on the path.
-``--use-apptainer``
-    Pull and execute every rule inside the matching apptainer image.
+``--apptainer-prefix`` (or ``--apptainer-args``)
+    Use Apptainer containers for tools. See the pipeline's ``apptainers.yaml`` for available containers.
 ``--deps``
     Print external dependencies and check whether they are installed.
 
@@ -85,11 +86,17 @@ them for unusual cases (short genomes, very deep coverage, single-end data,
 Run the pipeline
 ================
 
-Two equivalent ways::
+The simplest way: run directly from the initialization command with ``--execute``::
+
+    sequana_<name> --input-directory my_data --execute
+
+This skips creating a working directory and runs the pipeline in-place.
+
+Alternatively, run from the working directory::
 
     sh <pipeline>.sh
 
-or directly through snakemake::
+or via snakemake directly::
 
     snakemake -s <pipeline>.rules -j 4 -p
 
@@ -105,9 +112,9 @@ When the run is complete, the HTML report is at::
 Clean up
 ========
 
-To remove temporary files but keep the report::
+To remove temporary files but keep the report, use snakemake's cleanup rule::
 
-    make clean
+    snakemake -s <pipeline>.rules --cleanup
 
 
 Tips
@@ -115,7 +122,7 @@ Tips
 
 - Always run ``--deps`` once after installing a new pipeline.
 - Re-run with ``--force`` to overwrite an existing working directory.
-- For long runs on a cluster, prefer ``--use-apptainer`` — it pins the tool
+- For long runs on a cluster, prefer ``--apptainer-prefix`` — it pins the tool
   versions and eliminates conda-env clashes.
 - See :ref:`pipelines` for the full pipeline catalogue and
   :ref:`tutorial` for end-to-end examples.
