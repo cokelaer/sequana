@@ -52,24 +52,24 @@ sequana_coverage
     over represented genomic regions.
 :Status: Production
 :Help: please use sequana_coverage ``--help``
-:Sequana: See :class:`~sequana.bedtools.GenomeCov` to use the coverage in your own script.
+:Sequana: See :class:`~sequana.coverage.SequanaCoverage` to use the coverage in your own script.
 :Gallery: See examples in the `gallery <http://sequana.readthedocs.io/en/main/auto_examples/index.html>`_
 
 Starting from a BED file and its reference, one can use this command in a
 shell::
 
-    sequana_coverage  --input JB409847.sorted.bed -o
-                      --reference JB409847.fa --show-html
+    sequana_coverage  --input-file JB409847.sorted.bed \
+                      --reference-file JB409847.fa --show-html
 
 It creates an HTML report with various images showing the coverage and GC
 versus coverage plots. It also provides a set of CSV files with low or high
 coverage regions (as compared to the average coverage).
 
 .. seealso:: the underlying algorithm is described in details in the documentation
-    (:mod:`sequana.bedtools.GenomeCov`).
+    (:class:`sequana.coverage.SequanaCoverage`).
 
 
-sequana_summary
+sequana summary (subcommand)
 ------------------
 
 :Description: Prints basic statistics about a set of NGS input files. Currently
@@ -79,14 +79,15 @@ sequana_summary
     sequana summary file1.fastq.gz
 
 
-sequana_mapping
+sequana mapping (subcommand)
 ------------------
-:Description: a simple application to map reads onto a genome given one or two
-    FastQ files (gzipped) and a reference.
+:Description: Maps reads onto a genome given one or two FastQ files (gzipped) and a reference.
 
-    sequana_mapping --file1 H1_R1.fastq.gz --file2 H1_R2.fastq.gz  --reference temp.fa
+:Usage:
 
-will map all reads on the reference using bwa.
+    sequana mapping --file1 H1_R1.fastq.gz --file2 H1_R2.fastq.gz --reference temp.fa
+
+Maps all reads on the reference using bwa.
 
 .. _standalone_sequana_taxonomy:
 

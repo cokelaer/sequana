@@ -20,7 +20,7 @@ Two flavours:
   by ``pip install sequana``.
 - **External** tools used by pipelines (bwa, samtools, kraken2, fastqc, …).
   Install them via bioconda, your system package manager, or simply run the
-  pipeline with ``--use-apptainer`` to skip the question entirely.
+  pipeline with ``--apptainer-prefix`` to skip the question entirely.
 
 Sequana itself only needs ``kraken2``, ``cd-hit`` and ``krona`` to be on the
 ``$PATH`` (those are used by the ``sequana_taxonomy`` standalone).
@@ -69,11 +69,11 @@ Common causes, in decreasing order of frequency:
 4. **Pipeline bug** — report on
    ``https://github.com/sequana/<pipeline>/issues``.
 
-For verbose logs::
+For verbose output, use snakemake's built-in flags::
 
-    sh <pipeline>.sh --verbose
+    snakemake -s <pipeline>.rules --printshellcmds
 
-or rerun snakemake with ``--printshellcmds`` to see the failing command.
+The wrapper script ``<pipeline>.sh`` does not forward arbitrary flags to snakemake.
 
 Variant Calling — snpEff "Cannot find sequence" error
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -87,6 +87,43 @@ the file using::
 
     from sequana.snpeff import download_fasta_and_genbank
     download_fasta_and_genbank("LN831026", "myref")
+
+
+Library (Python API)
+--------------------
+
+How do I import Sequana without slowing down my script?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sequana uses lazy imports for heavy dependencies. You can speed up imports by
+being selective::
+
+    from sequana import FastA, VCF  # Fast — only loads what you need
+
+    from sequana import *            # Slower — loads everything
+
+How do I plot in a headless environment (cluster, CI/CD)?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Force matplotlib to use a non-interactive backend::
+
+    import matplotlib
+    matplotlib.use('Agg')  # Before importing Sequana or matplotlib.pyplot
+
+    from sequana import SequanaCoverage
+    cov = SequanaCoverage("file.bed")
+    cov[0].plot_coverage()
+    # Image saves, window doesn't open
+
+How do I handle large files (BAM, VCF)?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sequana file readers are iterator-based to keep memory usage low::
+
+    from sequana import VCF
+    vcf = VCF("large_file.vcf.gz")
+    for variant in vcf:  # Processes one variant at a time
+        print(variant.CHROM, variant.POS)
 
 
 PacBio

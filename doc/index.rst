@@ -33,6 +33,26 @@ catalogue.
 or via its pipelines and standalones (end users). To join the project, please
 let us know on `github <https://github.com/sequana/sequana/issues/306>`__.
 
+Choosing your entry point
+==========================
+
+Not sure where to start? This table helps:
+
+.. list-table::
+   :widths: 20 50
+   :header-rows: 1
+
+   * - What you want to do
+     - Use this
+   * - Run a pre-built NGS pipeline (fastqc, variant calling, RNA-seq, etc.)
+     - :ref:`pipelines` → :ref:`tutorial`
+   * - Use Python to read/analyze sequences, coverage, or variants
+     - :ref:`userguide` → :ref:`references`
+   * - Find a quick helper tool (rename files, filter GFF, count bases)
+     - ``sequana --help`` → :ref:`cli_reference`
+   * - See working code examples
+     - :doc:`auto_examples/index` or :doc:`notebooks`
+
 
 .. |bam| image::
     ./auto_examples/images/sphx_glr_plot_bam_001.png

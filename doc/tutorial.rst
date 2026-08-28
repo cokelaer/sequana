@@ -70,11 +70,11 @@ Then either drive it from Python::
                         database="~/.config/sequana/kraken_toydb")
     kp.run()
 
-…or from the shell::
+Or from the shell (alternative):
 
-    sequana_taxonomy --file1 Test_R1.cutadapt.fastq.gz \
-                     --file2 Test_R2.cutadapt.fastq.gz \
-                     --database <database_path>
+    sequana_taxonomy --input-file1 Test_R1.cutadapt.fastq.gz \
+                     --input-file2 Test_R2.cutadapt.fastq.gz \
+                     --databases <database_path>
 
 Open ``taxonomy/kraken.html`` (Krona pie chart). A reference rendering is
 available `here <_static/krona.html>`_.
@@ -166,9 +166,12 @@ Run::
     cd rnaseq
     sh rnaseq.sh
 
-On a SLURM cluster the same pipeline can be run with::
+On a SLURM cluster, initialize the pipeline with ``--profile slurm`` to
+auto-detect and configure the SLURM scheduler::
 
-    sbatch sh rnaseq.sh --profile slurm
+    sequana_rnaseq --genome-directory Saccer3 --aligner bowtie2 --profile slurm
+    cd rnaseq
+    sbatch rnaseq.sh
 
 (see the pipeline README for the cluster profile setup.)
 
@@ -178,8 +181,8 @@ Apptainer containers
 
 Every Sequana pipeline ships an ``apptainers.yaml`` that points at containers
 maintained by the `damona <https://damona.readthedocs.io>`_ project. Pipelines
-pull them automatically when invoked with ``--use-apptainer``::
+pull them automatically when invoked with ``--apptainer-prefix``::
 
-    sequana_fastqc --input-directory . --use-apptainer
+    sequana_fastqc --input-directory . --apptainer-prefix
 
 This is the recommended way to avoid conda/system tool clashes.

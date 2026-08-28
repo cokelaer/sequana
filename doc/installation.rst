@@ -87,7 +87,7 @@ Apptainer / Singularity containers
 All containers used by Sequana pipelines are produced by the
 `damona <https://damona.readthedocs.io>`_ project. You do not need to download
 them manually — Sequana pipelines pull them on demand when you pass
-``--use-apptainer``.
+``--apptainer-prefix``.
 
 If you want to grab a specific Sequana image yourself, browse
 https://damona.readthedocs.io for the available releases.

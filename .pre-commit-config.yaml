@@ -1,5 +1,8 @@
 
 files: '\.(py|rst|sh)$'
+# sequana/viz/upsetplot is vendored from UpSetPlot: keep it as close to upstream
+# as possible so that it stays easy to diff and to update.
+exclude: '^sequana/viz/upsetplot/'
 fail_fast: false
 
 repos:
