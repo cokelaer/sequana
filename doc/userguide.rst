@@ -183,12 +183,17 @@ Compute RMSD and align structures::
     pdb1 = parse_pdb("structure1.pdb")
     pdb2 = parse_pdb("structure2.pdb")
 
-    # Calculate RMSD
-    distance = rmsd(pdb1.models[0].chains[0], pdb2.models[0].chains[0])
+    # Get first chain from each structure
+    chain1 = list(pdb1.models[0].chains.values())[0]
+    chain2 = list(pdb2.models[0].chains.values())[0]
+
+    # Calculate RMSD between CA atoms
+    distance = rmsd(chain1.coordinates(), chain2.coordinates())
     print(f"RMSD: {distance:.2f} Å")
 
     # Superpose and align structures
-    superposed = superpose(pdb1.models[0].chains[0], pdb2.models[0].chains[0])
+    rotated, R, rmsd_val = superpose(chain1.coordinates(), chain2.coordinates())
+    print(f"RMSD after alignment: {rmsd_val:.2f} Å")
 
 
 Where to look next

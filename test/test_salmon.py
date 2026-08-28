@@ -75,10 +75,10 @@ def test_salmon_save_feature_counts(tmpdir):
     outfile = tmpdir.join("counts.out")
     Salmon(QUANT1, GFF).save_feature_counts(str(outfile))
 
-    lines = open(str(outfile)).read().split("\n")
+    lines = [l for l in open(str(outfile)).read().splitlines() if l.strip()]
     assert lines[0].startswith("# Program:sequana.salmon")
     assert lines[1].startswith("Geneid\tChr\tStart\tEnd\tStrand\tLength")
-    assert len(lines) == 6
+    assert len(lines) == 5
 
 
 def test_salmon_effective_length_is_sample_dependent():
