@@ -1,7 +1,7 @@
 .. _references_genomics:
 
-References (genomics: sequences, motifs, RNA)
-#############################################
+References (genomics: sequences, motifs, proteins, RNA)
+########################################################
 
 .. contents::
    :local:
@@ -115,5 +115,12 @@ RNA structure & rRNA depletion
     :undoc-members:
 
 .. automodule:: sequana.ribodesigner2
+    :members:
+    :undoc-members:
+
+Protein structures (3D)
+======================
+
+.. automodule:: sequana.pdb
     :members:
     :undoc-members:
