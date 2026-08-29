@@ -11,11 +11,11 @@
 #
 ##############################################################################
 
+import colorlog
 import pandas as pd
+import tqdm
 
 from sequana.gff3 import GFF3
-
-import colorlog
 
 logger = colorlog.getLogger(__name__)
 
@@ -44,7 +44,6 @@ class Salmon:
         # genes2trs is a dict with one gene sas key and a list of transcripts
 
     def get_feature_counts(self, feature=None, attribute=None):
-
         if self.df.Name.iloc[0].startswith("transcript:"):
             logger.info("salmon results start with transcript: tag. Eukaryotes mode")
             logger.info("Identifying the mapping transcript vs genes")
@@ -56,7 +55,6 @@ class Salmon:
         return results
 
     def get_feature_counts_eukaryotes(self, feature=None, attribute=None):
-
         if feature is None:
             feature = "gene"
 
@@ -68,13 +66,16 @@ class Salmon:
 
         # Name contains the salmon entries read from gffread that uses
         # transcript_id. From this transcript id, we get the gene (parent)
-        df["Gene"] = [self.trs2genes[x] for x in self.df.Name]
+        df["Gene"] = [self.trs2genes.get(x) for x in self.df.Name]
+
+        # Filter out transcripts not found in GFF
+        df = df[df["Gene"].notna()]
 
         # groups = df.groupby('Gene').groups
         counts_on_genes = df.groupby("Gene").NumReads.sum()
 
         ff = self.filename.split("/")[-1]
-        results = f"\nGeneid\tChr\tStart\tEnd\tStrand\tLength\t{ff}"
+        results = f"Geneid\tChr\tStart\tEnd\tStrand\tLength\t{ff}"
 
         # mouse 25814 gene (feature)
         #       53715 gene_id (attribute)
@@ -93,15 +94,11 @@ class Salmon:
         dd = dd.loc[counts_on_genes.index]
         self.dd = dd
 
-        types = dd["type"].values
+        types = dd["genetic_type"].values
         starts = dd["start"].values
         stops = dd["stop"].values
         strands = dd["strand"].values
         seqids = dd["seqid"].values
-
-        from easydev import Progress
-
-        pb = Progress(len(counts_on_genes))
 
         S = 0
 
@@ -110,7 +107,7 @@ class Salmon:
         efflength_null = df.groupby("Gene").apply(lambda group: group["EffectiveLength"].mean())
 
         groups = df.groupby("Gene")
-        for i, name in enumerate(counts_on_genes.index):
+        for i, name in tqdm.tqdm(enumerate(counts_on_genes.index)):
             # Since we use ID, there should be only one hit. we select the first
             # one to convert to a Series
 
@@ -123,26 +120,21 @@ class Salmon:
                 length = sum([x * y for x, y in zip(abundances, efflength)]) / abundances.sum()
                 S += abundances.sum()
 
-            # FIXME we keep only types 'gene' to agree with output of
-            # start/bowtie when working on the gene feature. What would happen
-            # to compare salmon wit other type of features ?
-            if types[i] == "gene":
+            # Include all gene-level features (gene, ncRNA_gene, pseudogene, etc.)
+            if types[i] in ("gene", "ncRNA_gene", "pseudogene"):
                 start = starts[i]
                 stop = stops[i]
                 seqid = seqids[i]
                 strand = strands[i]
-                NumReads = counts_on_genes.loc[name]
+                NumReads = round(counts_on_genes.loc[name])
                 length = length
                 name = name.replace("gene:", "")
                 results += f"\n{name}\t{seqid}\t{start}\t{stop}\t{strand}\t{length}\t{NumReads}"
-            else:
-                pass
-            pb.animate(i)
         return results
         """
 
 In [179]: genes2trs['gene:ENSMUSG00000000028']
-Out[179]: 
+Out[179]:
 ['transcript:ENSMUST00000000028',
  'transcript:ENSMUST00000096990',
  'transcript:ENSMUST00000115585']
@@ -196,7 +188,7 @@ star:
             attribute = "ID"
 
         annot = self.gff.df
-        annot = annot.query("type==@feature").copy()
+        annot = annot.query("genetic_type==@feature").copy()
         names = [x[attribute] for x in annot.attributes]
         identifiers = [x[attribute] for x in annot.attributes]
 
@@ -228,8 +220,8 @@ star:
                 new_name = dd["names"].values[0]
 
             if abs(length - length2) > 5:
-                print(name, length, length2)
-                raise ValueError("length in gff and quant not the same")
+                logger.warning(f"GFF and salmon length for for {name} are quite different: {length} and {length2}")
+                # raise ValueError("length in gff and quant not the same")
             NumReads = int(self.df.query("Name==@name")["NumReads"].values[0])
             if name.startswith("gene"):
                 results += f"\n{name}\t{seqid}\t{starts}\t{stops}\t{strands}\t{length}\t{NumReads}"
