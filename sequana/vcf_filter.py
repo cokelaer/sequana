@@ -13,6 +13,8 @@
 # CODE KEPT FOR NOW FOR BOOK KEEPING
 # SHOULD BE MERGED INTO freebayes_vcf_filter
 
+VCFBase = object
+
 
 class VCF_mpileup_4dot1(VCFBase):  # pragma: no cover
     """VCF filter dedicated to version 4.1 and mpileup

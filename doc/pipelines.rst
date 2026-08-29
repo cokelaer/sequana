@@ -37,7 +37,7 @@ Every Sequana pipeline ships an ``apptainers.yaml`` pointing at the
 matching `damona <https://damona.readthedocs.io>`_ image. Pull them on demand
 with::
 
-    sequana_<name> ... --use-apptainer
+    sequana_<name> ... --apptainer-prefix
 
 This is the recommended way to avoid conda / system tool clashes.
 
@@ -135,6 +135,38 @@ Taxonomy and assembly
    * - ``sequana_denovo``
      - De-novo assembly (digital normalisation + assembler + QC).
      - https://github.com/sequana/denovo
+   * - ``sequana_annotation``
+     - Genome annotation pipeline.
+     - https://github.com/sequana/annotation
+   * - ``sequana_slicer``
+     - Slice genomic regions from BAM files.
+     - https://github.com/sequana/slicer
+
+Specialized analysis
+--------------------
+
+.. list-table::
+   :widths: 18 50 32
+   :header-rows: 1
+
+   * - Pipeline
+     - Description
+     - Repository
+   * - ``sequana_chipseq``
+     - ChIP-seq peak calling and analysis.
+     - https://github.com/sequana/chipseq
+   * - ``sequana_cutandtag``
+     - CUT&amp;TAG data processing.
+     - https://github.com/sequana/cutandtag
+   * - ``sequana_hic``
+     - Hi-C chromosome interaction analysis.
+     - https://github.com/sequana/hic
+   * - ``sequana_meme``
+     - Motif discovery and enrichment (MEME suite).
+     - https://github.com/sequana/meme
+   * - ``sequana_nanocap``
+     - Nanopore cDNA analysis.
+     - https://github.com/sequana/nanocap
 
 Utilities
 ---------

@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "sequana"
-version = "0.24.1"
+version = "0.24.2"
 description = "A set of standalone application and pipelines dedicated to NGS analysis"
 authors = [{name="Thomas Cokelaer", email="<thomas.cokelaer@pasteur.fr>"}]
 license = { file = "LICENSE" }
@@ -75,6 +75,7 @@ dependencies = [
     "requests (>=2.32,<2.33)",
     "rich-click >=1.7.2",
     "scikit-learn (>=1.6.1)",
+    "sequana_report (>=0.1.0)",
     "scipy (>=1.14)",
     "seaborn (>=0.13.2)",
     "Pillow (>=10.0)",

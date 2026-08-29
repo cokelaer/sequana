@@ -25,6 +25,7 @@ def get_gene_lists():
 
 
 @pytest.mark.network
+@pytest.mark.timeout(120)
 def test_uniprot(mocker, tmpdir):
     gene_lists = get_gene_lists()
 

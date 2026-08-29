@@ -17,7 +17,7 @@
 ##############################################################################
 from sequana.lazy import pylab
 
-__all__ = ["plot_venn"]
+__all__ = ["plot_venn", "default_colors", "get_layout"]
 
 
 import math
@@ -33,6 +33,55 @@ default_colors = [
     [255 / 255.0, 117 / 255.0, 0 / 255.0, 0.3],
     [82 / 255.0, 82 / 255.0, 190 / 255.0, 0.2],
 ]
+
+
+def get_layout(num_sets):
+    """Get Venn diagram layout for n sets.
+
+    Returns a dict with shapes and text positions for the given number of sets.
+    Currently supports 2 and 3 sets.
+    """
+    if num_sets == 2:
+        return {
+            "shapes": [
+                ("ellipse", {"xy": (0.375, 0.5), "width": 0.6, "height": 0.6, "angle": 0}),
+                ("ellipse", {"xy": (0.625, 0.5), "width": 0.6, "height": 0.6, "angle": 0}),
+            ],
+            "texts": [
+                {"x": 0.26, "y": 0.50, "text": "", "fontsize": 12},
+                {"x": 0.50, "y": 0.50, "text": "", "fontsize": 12},
+                {"x": 0.74, "y": 0.50, "text": "", "fontsize": 12},
+            ],
+            "names": [
+                {"x": 0.25, "y": 0.15},
+                {"x": 0.75, "y": 0.15},
+            ],
+        }
+    elif num_sets == 3:
+        return {
+            "shapes": [
+                ("ellipse", {"xy": (0.33, 0.5), "width": 0.5, "height": 0.7, "angle": 0}),
+                ("ellipse", {"xy": (0.67, 0.5), "width": 0.5, "height": 0.7, "angle": 0}),
+                ("ellipse", {"xy": (0.50, 0.25), "width": 0.5, "height": 0.7, "angle": 0}),
+            ],
+            "texts": [
+                {"x": 0.20, "y": 0.60, "text": "", "fontsize": 10},
+                {"x": 0.80, "y": 0.60, "text": "", "fontsize": 10},
+                {"x": 0.50, "y": 0.05, "text": "", "fontsize": 10},
+                {"x": 0.50, "y": 0.50, "text": "", "fontsize": 10},
+                {"x": 0.35, "y": 0.30, "text": "", "fontsize": 10},
+                {"x": 0.65, "y": 0.30, "text": "", "fontsize": 10},
+                {"x": 0.50, "y": 0.20, "text": "", "fontsize": 10},
+            ],
+            "names": [
+                {"x": 0.15, "y": 0.85},
+                {"x": 0.85, "y": 0.85},
+                {"x": 0.50, "y": 0.05},
+            ],
+        }
+    else:
+        # Return empty layout for unsupported set sizes
+        return {"shapes": [], "texts": [], "names": []}
 
 
 def draw_shape(ax, shape, params, fillcolor):

@@ -255,6 +255,12 @@ Changelog :memo:
 ========= ==========================================================================
 Version   Description
 ========= ==========================================================================
+0.24.2    * NEW: Phylogenetic analysis modules (phylo.py, alignment.py)
+            Parse and manipulate Newick trees; MSA parsing (PHYLIP, Stockholm,
+            Nexus, FASTA); consensus sequences and alignment statistics
+          * NEW: UpSetPlot visualization library for set intersections
+          * NEW: Protein 3D structure analysis (pdb.py)
+          * Pipeline catalogue expanded with 7 new pipelines
 0.24.1    * Fix bowtie2 plots being empty when built from the multiqc plot data
             files (mqc_bowtie2_{se,pe}_plot_1.txt), whose columns are named after
             the plot legend. Missing columns now raise instead of drawing an

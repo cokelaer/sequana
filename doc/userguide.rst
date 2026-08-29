@@ -85,22 +85,115 @@ The :class:`~sequana.fastqc.FastQC` class exposes per-read metrics::
     legend()
 
 
+Reading sequence data (FASTA/FASTQ)
+===================================
+
+The :class:`~sequana.fasta.FastA` and :class:`~sequana.fastq.FastQ` classes
+read and manipulate sequence files::
+
+    from sequana import FastA, sequana_data
+    fasta = FastA(sequana_data("measles.fasta"))
+    for record in fasta:
+        print(record.name, len(record.seq))
+
+Access GC content and other sequence metrics via :class:`~sequana.sequence.DNA`.
+
+Annotations (GFF3/GenBank)
+===========================
+
+Parse genome annotations with :class:`~sequana.gff3.GFF3` or
+:class:`~sequana.genbank.GenBank`::
+
+    from sequana import GFF3, sequana_data
+    gff = GFF3(sequana_data("annotations.gff3"))
+    genes = [r for r in gff if r.feature == "gene"]
+
+Variants (VCF)
+==============
+
+The :class:`~sequana.vcftools.VCF` class reads and filters VCF files::
+
+    from sequana import VCF, sequana_data
+    vcf = VCF(sequana_data("variants.vcf"))
+    for variant in vcf:
+        print(variant.CHROM, variant.POS, variant.REF, variant.ALT)
+
+Taxonomy (Kraken)
+=================
+
+Classify sequences and parse Kraken output with :mod:`sequana.kraken`::
+
+    from sequana.kraken import KrakenResults
+    kr = KrakenResults(sequana_data("kraken.out"))
+    kr.plot()  # Krona pie chart
+
 Building HTML report sections from Python
 =========================================
 
-Sequana's pipeline reports are themselves assembled from reusable building
-blocks in :mod:`sequana.modules_report`. You can call them on your own data.
+Sequana's pipeline reports are assembled from reusable building blocks in
+:mod:`sequana.modules_report`. You can call them on your own data.
 Example for a BAM file::
 
     from sequana import BAM, sequana_data
     from sequana.modules_report.bamqc import BAMQCModule
-    BAMQCModule(sequana_data("test.bam", "testing"), "bam.html")
+    BAMQCModule(sequana_data("test.bam"), "bam.html")
 
 The generated ``bam.html`` is a self-contained page (see
 `bam.html <_static/bam.html>`_ for a rendered example).
 
 To build a brand-new report module, see :ref:`module_reports` in the
 developer guide.
+
+Feature counting and differential expression
+==============================================
+
+Count reads per feature (gene, exon, etc.) with :class:`~sequana.featurecounts.FeatureCounts`::
+
+    from sequana import FeatureCounts
+    fc = FeatureCounts("counts.txt")
+    df = fc.df  # pandas DataFrame of gene counts
+
+For differential expression, see :mod:`sequana.rnadiff` (wraps DESeq2) and
+:mod:`sequana.enrichment` for KEGG/GSEA enrichment analysis.
+
+Protein structures (PDB)
+========================
+
+Parse and analyze 3D protein structures from PDB files with
+:mod:`sequana.pdb`::
+
+    from sequana.pdb import parse_pdb
+    structure = parse_pdb("protein.pdb")
+
+    # Iterate over chains and residues
+    for chain in structure.models[0].chains:
+        seq = chain.sequence()  # Get amino acid sequence
+        print(f"Chain {chain.chain_id}: {len(chain.residues)} residues")
+
+    # Access atoms and coordinates
+    for residue in chain.residues:
+        ca = residue.get_atom("CA")  # Alpha carbon
+        if ca:
+            print(f"{residue.name}{residue.seq}: {ca.coordinates()}")
+
+Compute RMSD and align structures::
+
+    from sequana.pdb import parse_pdb, rmsd, superpose
+
+    pdb1 = parse_pdb("structure1.pdb")
+    pdb2 = parse_pdb("structure2.pdb")
+
+    # Get first chain from each structure
+    chain1 = list(pdb1.models[0].chains.values())[0]
+    chain2 = list(pdb2.models[0].chains.values())[0]
+
+    # Calculate RMSD between CA atoms
+    distance = rmsd(chain1.coordinates(), chain2.coordinates())
+    print(f"RMSD: {distance:.2f} Å")
+
+    # Superpose and align structures
+    rotated, R, rmsd_val = superpose(chain1.coordinates(), chain2.coordinates())
+    print(f"RMSD after alignment: {rmsd_val:.2f} Å")
 
 
 Where to look next
