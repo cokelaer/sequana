@@ -820,9 +820,9 @@ class Alignment:
                 for residue in chain.residues:
                     new_res = Residue(residue.name, residue.seq, residue.chain_id, residue.insertion_code)
                     for atom in residue.atoms.values():
-                        # Transform atom
+                        # Transform atom: rotate then translate
                         coord = atom.coordinates()
-                        new_coord = (coord - self.translation) @ self.rotation_matrix.T
+                        new_coord = (coord @ self.rotation_matrix.T) + self.translation
                         new_atom = Atom(
                             atom.serial,
                             atom.name,
