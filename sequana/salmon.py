@@ -13,6 +13,7 @@
 
 import colorlog
 import pandas as pd
+import tqdm
 
 from sequana.gff3 import GFF3
 
@@ -65,13 +66,16 @@ class Salmon:
 
         # Name contains the salmon entries read from gffread that uses
         # transcript_id. From this transcript id, we get the gene (parent)
-        df["Gene"] = [self.trs2genes[x] for x in self.df.Name]
+        df["Gene"] = [self.trs2genes.get(x) for x in self.df.Name]
+
+        # Filter out transcripts not found in GFF
+        df = df[df["Gene"].notna()]
 
         # groups = df.groupby('Gene').groups
         counts_on_genes = df.groupby("Gene").NumReads.sum()
 
         ff = self.filename.split("/")[-1]
-        results = f"\nGeneid\tChr\tStart\tEnd\tStrand\tLength\t{ff}"
+        results = f"Geneid\tChr\tStart\tEnd\tStrand\tLength\t{ff}"
 
         # mouse 25814 gene (feature)
         #       53715 gene_id (attribute)
@@ -90,7 +94,7 @@ class Salmon:
         dd = dd.loc[counts_on_genes.index]
         self.dd = dd
 
-        types = dd["type"].values
+        types = dd["genetic_type"].values
         starts = dd["start"].values
         stops = dd["stop"].values
         strands = dd["strand"].values
@@ -116,20 +120,16 @@ class Salmon:
                 length = sum([x * y for x, y in zip(abundances, efflength)]) / abundances.sum()
                 S += abundances.sum()
 
-            # FIXME we keep only types 'gene' to agree with output of
-            # start/bowtie when working on the gene feature. What would happen
-            # to compare salmon wit other type of features ?
-            if types[i] == "gene":
+            # Include all gene-level features (gene, ncRNA_gene, pseudogene, etc.)
+            if types[i] in ("gene", "ncRNA_gene", "pseudogene"):
                 start = starts[i]
                 stop = stops[i]
                 seqid = seqids[i]
                 strand = strands[i]
-                NumReads = counts_on_genes.loc[name]
+                NumReads = round(counts_on_genes.loc[name])
                 length = length
                 name = name.replace("gene:", "")
                 results += f"\n{name}\t{seqid}\t{start}\t{stop}\t{strand}\t{length}\t{NumReads}"
-            else:
-                pass
         return results
         """
 
