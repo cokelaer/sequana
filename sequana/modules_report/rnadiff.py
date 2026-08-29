@@ -160,7 +160,7 @@ for that feature.</p>
         self.sections.append(
             {
                 "name": "Summary",
-                "anchor": "filters_option",
+                "anchor": "summary",
                 "content": f"""<p>Here below is a summary of the Differential Gene
 Expression (DGE) analysis. You can find two entries per comparison. The first
 one has no filter except for an adjusted p-value of 0.05. The second shows the
@@ -183,7 +183,7 @@ scale). Clicking on any of the link will lead you to the section of the comparis
         html = """<p>dispersion of the fitted data to the model</p>{}<hr>""".format(
             self.create_embedded_png(dispersion, "filename", style=style)
         )
-        self.sections.append({"name": f"{self._count_section}. Dispersion", "anchor": "table", "content": html})
+        self.sections.append({"name": f"{self._count_section}. Dispersion", "anchor": "dispersion", "content": html})
         self._count_section += 1
 
     def add_cluster(self):
@@ -277,7 +277,7 @@ variance stabilization); the first 500 most variable genes were selected. </p>""
         self.sections.append(
             {
                 "name": f"{self._count_section}. Clusterisation",
-                "anchor": "table",
+                "anchor": "clusterisation",
                 "content": html_dendogram + html_pca + html_pca_plotly,
             }
         )
@@ -417,7 +417,7 @@ normalised counts.
         self.sections.append(
             {
                 "name": f"{self._count_section}. Normalisation",
-                "anchor": "table",
+                "anchor": "normalisation",
                 "content": html_boxplot + img1 + img2 + html_size_factor + js_all + table1 + "</hr>",
             }
         )
@@ -436,14 +436,46 @@ normalised counts.
         html_upsetplot = """<p> Upset plots are an alternative to venn diagrams, easing the visualisation of DEG lists overlap between comparisons."""
         img = self.create_embedded_png(upsetplot, "filename", style=style)
 
+        html_venn = self._create_venn_diagram()
+
         self.sections.append(
             {
                 "name": f"{self._count_section}. Upset plot",
-                "anchor": "table",
-                "content": html_upsetplot + img + "</hr>",
+                "anchor": "upset_plot",
+                "content": html_venn + html_upsetplot + img + "</hr>",
             }
         )
         self._count_section += 1
+
+    def _create_venn_diagram(self):
+        from sequana.utils.venn_js import DynamicVenn
+
+        comp_names = list(self.rnadiff.comparisons.keys())
+        if len(comp_names) < 2 or len(comp_names) > 6:
+            return ""
+
+        rows = []
+        all_genes = set()
+
+        for comp_name, comp in self.rnadiff.comparisons.items():
+            all_genes.update(comp.df.index)
+
+        for gene in sorted(all_genes):
+            row = []
+            for comp_name in comp_names:
+                comp = self.rnadiff.comparisons[comp_name]
+                if gene in comp.df.index:
+                    l2fc = comp.df.loc[gene, "log2FoldChange"]
+                    padj = comp.df.loc[gene, "padj"]
+                    is_sig = padj <= 0.05
+                    code = DynamicVenn.encode_log2_fold_change(pd.Series([l2fc]), pd.Series([is_sig]))[0]
+                    row.append(int(code))
+                else:
+                    row.append(0)
+            rows.append(row)
+
+        venn = DynamicVenn(comp_names, rows, html_id="rnadiff_venn")
+        return f"<h3>Venn diagram</h3>{venn.to_html()}"
 
     def add_individual_report(self, comp, name, counter):
         style = "width:45%"
