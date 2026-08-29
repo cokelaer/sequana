@@ -15,11 +15,13 @@
 import os
 
 import colorlog
+import sequana_report.config as report_config
 
 from sequana.lazy import pandas as pd
 from sequana.lazy import pylab
 from sequana.modules_report.base_module import SequanaBaseModule
 from sequana.rnadiff import RNADiffResults
+from sequana.utils import config as sequana_config
 from sequana.utils.datatables_js import DataTable
 
 logger = colorlog.getLogger(__name__)
@@ -56,6 +58,7 @@ class RNAdiffModule(SequanaBaseModule):
         self.create_main_report_content()
         self.create_individual_reports()
         self.create_command_section()
+        report_config.output_dir = sequana_config.output_dir
         self.create_html(output_filename)
 
         # Fixme not sure this is required to be imported here
