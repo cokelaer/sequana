@@ -36,10 +36,10 @@ default_colors = [
 
 
 def get_layout(num_sets):
-    """Get Venn diagram layout for n sets with region keys and alignment.
+    """Get Venn diagram layout for n sets.
 
-    Returns a dict with shapes, text positions, region keys, and alignment fields
-    for use by venn_js. Supports 2-6 sets.
+    Returns a dict with shapes and text positions for the given number of sets.
+    Currently supports 2 and 3 sets.
     """
     if num_sets == 2:
         return {
@@ -48,35 +48,35 @@ def get_layout(num_sets):
                 ("ellipse", {"xy": (0.625, 0.5), "width": 0.6, "height": 0.6, "angle": 0}),
             ],
             "texts": [
-                {"x": 0.26, "y": 0.50, "key": "10", "ha": "center", "va": "center"},
-                {"x": 0.50, "y": 0.50, "key": "11", "ha": "center", "va": "center"},
-                {"x": 0.74, "y": 0.50, "key": "01", "ha": "center", "va": "center"},
+                {"x": 0.26, "y": 0.50, "text": "", "fontsize": 12},
+                {"x": 0.50, "y": 0.50, "text": "", "fontsize": 12},
+                {"x": 0.74, "y": 0.50, "text": "", "fontsize": 12},
             ],
             "names": [
-                {"x": 0.20, "y": 0.76, "ha": "right", "va": "bottom"},
-                {"x": 0.80, "y": 0.76, "ha": "left", "va": "bottom"},
+                {"x": 0.25, "y": 0.15},
+                {"x": 0.75, "y": 0.15},
             ],
         }
     elif num_sets == 3:
         return {
             "shapes": [
-                ("ellipse", {"xy": (0.333, 0.633), "width": 0.5, "height": 0.5, "angle": 0}),
-                ("ellipse", {"xy": (0.666, 0.633), "width": 0.5, "height": 0.5, "angle": 0}),
-                ("ellipse", {"xy": (0.500, 0.310), "width": 0.5, "height": 0.5, "angle": 0}),
+                ("ellipse", {"xy": (0.33, 0.5), "width": 0.5, "height": 0.7, "angle": 0}),
+                ("ellipse", {"xy": (0.67, 0.5), "width": 0.5, "height": 0.7, "angle": 0}),
+                ("ellipse", {"xy": (0.50, 0.25), "width": 0.5, "height": 0.7, "angle": 0}),
             ],
             "texts": [
-                {"x": 0.50, "y": 0.27, "key": "001", "ha": "center", "va": "center"},
-                {"x": 0.73, "y": 0.65, "key": "010", "ha": "center", "va": "center"},
-                {"x": 0.61, "y": 0.46, "key": "011", "ha": "center", "va": "center"},
-                {"x": 0.27, "y": 0.65, "key": "100", "ha": "center", "va": "center"},
-                {"x": 0.39, "y": 0.46, "key": "101", "ha": "center", "va": "center"},
-                {"x": 0.50, "y": 0.65, "key": "110", "ha": "center", "va": "center"},
-                {"x": 0.50, "y": 0.51, "key": "111", "ha": "center", "va": "center"},
+                {"x": 0.20, "y": 0.60, "text": "", "fontsize": 10},
+                {"x": 0.80, "y": 0.60, "text": "", "fontsize": 10},
+                {"x": 0.50, "y": 0.05, "text": "", "fontsize": 10},
+                {"x": 0.50, "y": 0.50, "text": "", "fontsize": 10},
+                {"x": 0.35, "y": 0.30, "text": "", "fontsize": 10},
+                {"x": 0.65, "y": 0.30, "text": "", "fontsize": 10},
+                {"x": 0.50, "y": 0.20, "text": "", "fontsize": 10},
             ],
             "names": [
-                {"x": 0.15, "y": 0.87, "ha": "right", "va": "bottom"},
-                {"x": 0.85, "y": 0.87, "ha": "left", "va": "bottom"},
-                {"x": 0.50, "y": 0.02, "ha": "center", "va": "top"},
+                {"x": 0.15, "y": 0.85},
+                {"x": 0.85, "y": 0.85},
+                {"x": 0.50, "y": 0.05},
             ],
         }
     else:
