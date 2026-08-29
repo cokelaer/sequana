@@ -48,6 +48,18 @@ class Salmon:
             logger.info("salmon results start with transcript: tag. Eukaryotes mode")
             logger.info("Identifying the mapping transcript vs genes")
             self.trs2genes, self.genes2trs = self.gff.transcript_to_gene_mapping(attribute="transcript_id")
+            # Filter to transcripts and genes only (exclude exons, CDS, etc., and nan values)
+            self.trs2genes = {
+                k: v for k, v in self.trs2genes.items()
+                if isinstance(v, str) and (k.startswith("transcript:") or k.startswith("gene:"))
+            }
+            # Add transcript aliases (e.g., "TR1" → same gene as "transcript:TR1")
+            aliases = {}
+            for key in list(self.trs2genes.keys()):
+                if key.startswith("transcript:"):
+                    alias = key.split(":", 1)[1]
+                    aliases[alias] = self.trs2genes[key]
+            self.trs2genes.update(aliases)
             results = self.get_feature_counts_eukaryotes(feature, attribute)
         else:
             logger.info("salmon results not starting with transcript. Prokaryotes mode")
@@ -55,8 +67,11 @@ class Salmon:
         return results
 
     def get_feature_counts_eukaryotes(self, feature=None, attribute=None):
+        # Parse feature parameter: "gene" or "gene,ncRNA_gene" → list of types
         if feature is None:
-            feature = "gene"
+            allowed_types = ("gene", "ncRNA_gene", "pseudogene")
+        else:
+            allowed_types = tuple(f.strip() for f in feature.split(","))
 
         if attribute is None:
             attribute = "ID"
@@ -120,8 +135,8 @@ class Salmon:
                 length = sum([x * y for x, y in zip(abundances, efflength)]) / abundances.sum()
                 S += abundances.sum()
 
-            # Include all gene-level features (gene, ncRNA_gene, pseudogene, etc.)
-            if types[i] in ("gene", "ncRNA_gene", "pseudogene"):
+            # Filter by feature type
+            if types[i] in allowed_types:
                 start = starts[i]
                 stop = stops[i]
                 seqid = seqids[i]
@@ -227,7 +242,7 @@ star:
                 results += f"\n{name}\t{seqid}\t{starts}\t{stops}\t{strands}\t{length}\t{NumReads}"
         return results
 
-    def save_feature_counts(self, filename, feature="gene", attribute="ID"):
+    def save_feature_counts(self, filename, feature=None, attribute="ID"):
         from sequana import version
 
         data = self.get_feature_counts(feature=feature, attribute=attribute)

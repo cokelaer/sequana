@@ -78,7 +78,7 @@ def test_salmon_save_feature_counts(tmpdir):
     lines = [l for l in open(str(outfile)).read().splitlines() if l.strip()]
     assert lines[0].startswith("# Program:sequana.salmon")
     assert lines[1].startswith("Geneid\tChr\tStart\tEnd\tStrand\tLength")
-    assert len(lines) == 5
+    assert len(lines) == 6  # comment + header + 4 genes
 
 
 def test_salmon_effective_length_is_sample_dependent():
